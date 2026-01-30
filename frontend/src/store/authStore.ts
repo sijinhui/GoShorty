@@ -14,7 +14,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
-  isLoading: true, // 初始为true，应用启动时显示加载状态
+  isLoading: false, // 改为false，只在需要时才检查认证
   error: null,
 
   login: async (credentials: LoginRequest) => {

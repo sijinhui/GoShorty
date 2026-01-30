@@ -10,8 +10,13 @@ import { useAuthStore } from './store/authStore';
 
 // 受保护的路由组件
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
   const location = useLocation();
+
+  // 组件挂载时检查认证状态
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   // 认证检查期间显示加载指示器
   if (isLoading) {
@@ -35,13 +40,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const { checkAuth } = useAuthStore();
-
-  // 应用启动时验证会话
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
   return (
     <BrowserRouter>
       <Routes>
