@@ -58,6 +58,7 @@ func main() {
 	userRepo := repository.NewPostgresUserRepository(db.Pool)
 	sessionRepo := repository.NewPostgresSessionRepository(db.Pool)
 	analyticsRepo := repository.NewPostgresAnalyticsRepository(db.Pool)
+	settingsRepo := repository.NewPostgresSettingsRepository(db.Pool)
 
 	// 初始化插件系统
 	pluginManager := plugin.NewManager(logger)
@@ -70,7 +71,17 @@ func main() {
 	}
 
 	// 初始化Service层
-	codeGenerator := service.NewBase62Generator(6)
+	settingsService := service.NewSettingsService(settingsRepo, logger)
+
+	// 从数据库获取短链接长度配置
+	shortCodeLength, err := settingsService.GetShortCodeLength(context.Background())
+	if err != nil {
+		logger.Warn("Failed to get short_code_length from database, using default 3", zap.Error(err))
+		shortCodeLength = 3
+	}
+	logger.Info("Short code length configured", zap.Int("length", shortCodeLength))
+
+	codeGenerator := service.NewBase62Generator(shortCodeLength)
 	linkService := service.NewLinkService(linkRepo, codeGenerator, hooks, logger)
 	authService := service.NewAuthService(userRepo, sessionRepo, cfg.Session.MaxAge, logger)
 	geoResolver := geolocation.NewSimpleGeoIPResolver()
@@ -81,6 +92,7 @@ func main() {
 	authMiddleware := handler.NewAuthMiddleware(authService, logger)
 	adminHandler := handler.NewAdminHandler(authService, linkService, logger)
 	apiHandler := handler.NewAPIHandler(linkService, analyticsService, logger)
+	settingsHandler := handler.NewSettingsHandler(settingsService, logger)
 
 	// 初始化Gin
 	if cfg.Log.Level == "production" {
@@ -115,6 +127,8 @@ func main() {
 			api.GET("/links", apiHandler.GetLinks)
 			api.DELETE("/links/:id", apiHandler.DeleteLink)
 			api.GET("/analytics/link", apiHandler.GetLinkAnalytics)
+			api.GET("/settings", settingsHandler.GetSettings)
+			api.PUT("/settings", settingsHandler.UpdateSettings)
 		}
 	}
 
@@ -139,7 +153,7 @@ func main() {
 		router.Static("/assets", filepath.Join(cfg.Frontend.StaticPath, "assets"))
 
 		// 管理后台前端路由（返回index.html，让React处理路由）
-		adminPages := []string{"/admin", "/admin/login", "/admin/dashboard", "/admin/links", "/admin/analytics"}
+		adminPages := []string{"/admin", "/admin/login", "/admin/dashboard", "/admin/links", "/admin/analytics", "/admin/settings"}
 		for _, path := range adminPages {
 			router.GET(path, func(c *gin.Context) {
 				c.File(filepath.Join(cfg.Frontend.StaticPath, "index.html"))

@@ -29,23 +29,31 @@ func main() {
 	}
 	defer db.Close()
 
-	// 读取迁移文件
-	migrationFile := "internal/database/migrations/001_initial_schema.sql"
-	content, err := os.ReadFile(migrationFile)
-	if err != nil {
-		logger.Fatal("Failed to read migration file", zap.Error(err))
+	// 读取并执行所有迁移文件
+	migrationFiles := []string{
+		"internal/database/migrations/001_initial_schema.sql",
+		"internal/database/migrations/002_add_settings_table.sql",
 	}
 
-	// 执行迁移
 	ctx := context.Background()
-	_, err = db.Pool.Exec(ctx, string(content))
-	if err != nil {
-		logger.Fatal("Failed to execute migration", zap.Error(err))
+	for _, migrationFile := range migrationFiles {
+		content, err := os.ReadFile(migrationFile)
+		if err != nil {
+			logger.Warn("Failed to read migration file", zap.String("file", migrationFile), zap.Error(err))
+			continue
+		}
+
+		// 执行迁移
+		_, err = db.Pool.Exec(ctx, string(content))
+		if err != nil {
+			logger.Warn("Failed to execute migration", zap.String("file", migrationFile), zap.Error(err))
+			continue
+		}
+
+		logger.Info("Migration completed successfully",
+			zap.String("file", filepath.Base(migrationFile)),
+		)
 	}
 
-	logger.Info("Migration completed successfully",
-		zap.String("file", filepath.Base(migrationFile)),
-	)
-
-	fmt.Println("✅ Database migration completed successfully!")
+	fmt.Println("✅ Database migrations completed successfully!")
 }
