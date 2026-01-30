@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"os"
+	"time"
 
 	"GoShorty/internal/config"
 	"GoShorty/internal/database"
@@ -43,7 +43,7 @@ func main() {
 		fmt.Println("Dry-run mode: would delete expired links")
 	} else {
 		// 删除过期链接
-		if err := linkRepo.DeleteExpired(ctx); err != nil {
+		if err := linkRepo.DeleteExpired(ctx, time.Now()); err != nil {
 			logger.Fatal("Failed to delete expired links", zap.Error(err))
 		}
 		logger.Info("Successfully deleted expired links")
