@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/big"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -27,13 +28,32 @@ const (
 	maxShortCodeLength = 20
 )
 
+// 黑名单词组（保留的系统路由和关键词）
+var blacklistedWords = []string{
+	"admin", "api", "assets", "health", "static",
+	"login", "logout", "register", "dashboard",
+	"user", "users", "settings", "config",
+}
+
 var (
 	// 短码格式验证（只允许字母和数字）
 	shortCodeRegex = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 
 	ErrInvalidShortCodeLength = errors.New("short code length must be between 3 and 20")
 	ErrInvalidShortCodeFormat = errors.New("short code can only contain letters and numbers")
+	ErrShortCodeBlacklisted   = errors.New("short code is reserved and cannot be used")
 )
+
+// isBlacklisted 检查短码是否在黑名单中（不区分大小写）
+func isBlacklisted(code string) bool {
+	lowerCode := strings.ToLower(code)
+	for _, word := range blacklistedWords {
+		if lowerCode == word {
+			return true
+		}
+	}
+	return false
+}
 
 // ShortCodeGenerator 短码生成器接口
 type ShortCodeGenerator interface {
@@ -56,15 +76,27 @@ func NewBase62Generator(length int) *Base62Generator {
 
 // Generate 生成一个随机的短码（使用安全字符集）
 func (g *Base62Generator) Generate() (string, error) {
-	result := make([]byte, g.length)
-	for i := 0; i < g.length; i++ {
-		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(safeChars))))
-		if err != nil {
-			return "", err
+	// 最多尝试10次生成，避免极小概率生成黑名单词组
+	maxAttempts := 10
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		result := make([]byte, g.length)
+		for i := 0; i < g.length; i++ {
+			num, err := rand.Int(rand.Reader, big.NewInt(int64(len(safeChars))))
+			if err != nil {
+				return "", err
+			}
+			result[i] = safeChars[num.Int64()]
 		}
-		result[i] = safeChars[num.Int64()]
+		code := string(result)
+
+		// 检查是否在黑名单中
+		if !isBlacklisted(code) {
+			return code, nil
+		}
 	}
-	return string(result), nil
+
+	// 如果10次都生成了黑名单词组（几乎不可能），返回错误
+	return "", ErrShortCodeBlacklisted
 }
 
 // Validate 验证短码格式
@@ -75,6 +107,10 @@ func (g *Base62Generator) Validate(code string) error {
 
 	if !shortCodeRegex.MatchString(code) {
 		return ErrInvalidShortCodeFormat
+	}
+
+	if isBlacklisted(code) {
+		return ErrShortCodeBlacklisted
 	}
 
 	return nil

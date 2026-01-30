@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"GoShorty/internal/domain"
@@ -83,6 +84,10 @@ func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*
 		// 使用自定义短码
 		if err := s.codeGenerator.Validate(req.CustomCode); err != nil {
 			s.logger.Error("invalid custom code", zap.String("code", req.CustomCode), zap.Error(err))
+			// 检查是否是黑名单错误
+			if errors.Is(err, ErrShortCodeBlacklisted) {
+				return nil, domain.ErrShortCodeBlacklisted
+			}
 			return nil, domain.ErrInvalidShortCode
 		}
 
