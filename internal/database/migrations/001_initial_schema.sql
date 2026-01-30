@@ -8,6 +8,11 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 插入系统默认用户（用于公开链接）
+INSERT INTO users (id, username, password_hash, email)
+VALUES (1, 'system', '$2a$10$dummy.hash.for.system.user.not.used.for.login', 'system@goshorty.local')
+ON CONFLICT (id) DO NOTHING;
+
 -- 短链接表
 CREATE TABLE IF NOT EXISTS links (
     id BIGSERIAL PRIMARY KEY,
