@@ -20,7 +20,7 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showRedirectMessage, setShowRedirectMessage] = useState(false);
-  const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
+  const { login, isLoading, error, clearError, isAuthenticated, checkAuth } = useAuthStore();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -29,6 +29,11 @@ export default function Login() {
     const redirect = searchParams.get('redirect');
     return redirect ? decodeURIComponent(redirect) : '/admin';
   };
+
+  // 组件挂载时检查登录状态
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   // 如果用户已登录，显示提示并在2秒后跳转
   useEffect(() => {

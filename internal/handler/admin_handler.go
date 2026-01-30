@@ -84,3 +84,26 @@ func (h *AdminHandler) HandleCheckAuth(c *gin.Context) {
 	}, "会话有效")
 }
 
+// HandleLogout 处理登出请求
+func (h *AdminHandler) HandleLogout(c *gin.Context) {
+	// 从Cookie中获取session_id
+	sessionID, err := c.Cookie("session_id")
+	if err != nil {
+		// 即使没有session_id，也返回成功（幂等性）
+		RespondSuccess(c, nil, "登出成功")
+		return
+	}
+
+	// 删除会话
+	if err := h.authService.Logout(c.Request.Context(), sessionID); err != nil {
+		h.logger.Error("logout failed", zap.Error(err))
+		// 即使删除失败，也清除Cookie
+	}
+
+	// 清除Cookie
+	c.SetCookie("session_id", "", -1, "/", "", false, true)
+
+	// 返回成功响应
+	RespondSuccess(c, nil, "登出成功")
+}
+

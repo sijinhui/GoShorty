@@ -122,6 +122,7 @@ func main() {
 		api := admin.Group("/api")
 		{
 			api.GET("/auth/check", adminHandler.HandleCheckAuth)
+			api.POST("/auth/logout", adminHandler.HandleLogout)
 			api.GET("/dashboard/stats", apiHandler.GetDashboardStats)
 			api.POST("/links", apiHandler.CreateLink)
 			api.GET("/links", apiHandler.GetLinks)

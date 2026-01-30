@@ -8,7 +8,7 @@ export const login = async (data: LoginRequest): Promise<APIResponse<LoginRespon
 
 // 登出
 export const logout = async (): Promise<APIResponse> => {
-  return apiClient.post('/logout');
+  return apiClient.post('/auth/logout');
 };
 
 // 验证会话（可选，用于检查登录状态）
