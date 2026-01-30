@@ -8,20 +8,29 @@ GoShorty是一个使用Go语言开发的高性能短链接服务，类似于YOUR
 - ✅ **链接管理** - 完整的CRUD操作和批量管理
 - ✅ **访问统计** - 详细的点击统计、访问日志、地理位置分析
 - ✅ **用户认证** - 基于Session的管理后台认证
-- ✅ **管理后台** - 使用HTMX的现代化管理界面
+- ✅ **管理后台** - 使用React + TypeScript的现代化SPA管理界面
+- ✅ **前后端分离** - Vite构建，Go服务器托管静态文件
 - ✅ **插件系统** - 可扩展的插件架构
 - ✅ **自动过期** - 默认7天过期策略（可配置）
 - ✅ **安全字符集** - 移除易混淆字符，提高可读性
 
 ## 技术栈
 
+### 后端
 - **语言**: Go 1.25+
 - **Web框架**: Gin v1.9+
 - **数据库**: PostgreSQL 14+
 - **数据库驱动**: pgx v5.5+
-- **前端**: HTMX + Tailwind CSS
 - **日志**: Zap
 - **配置**: Viper
+
+### 前端
+- **框架**: React 18 + TypeScript
+- **构建工具**: Vite
+- **路由**: React Router v6
+- **状态管理**: Zustand
+- **数据获取**: TanStack React Query
+- **HTTP客户端**: Axios
 
 ## 快速开始
 
@@ -29,7 +38,8 @@ GoShorty是一个使用Go语言开发的高性能短链接服务，类似于YOUR
 
 - Go 1.25或更高版本
 - PostgreSQL 14或更高版本
-- Make（可选）
+- Node.js 18或更高版本
+- Make（推荐用于构建）
 
 ### 安装
 
@@ -39,29 +49,45 @@ git clone https://github.com/yourusername/goshorty.git
 cd goshorty
 ```
 
-2. 安装依赖
+2. 安装后端依赖
 ```bash
 go mod download
 ```
 
-3. 配置环境变量
+3. 安装前端依赖
+```bash
+make frontend-install
+# 或者
+cd frontend && npm install
+```
+
+4. 配置环境变量
 ```bash
 cp .env.example .env
 # 编辑.env文件，配置数据库连接等信息
 ```
 
-4. 运行数据库迁移
+5. 运行数据库迁移
 ```bash
 go run scripts/migrate/main.go
 ```
 
-5. 创建管理员账号
+6. 创建管理员账号
 ```bash
 go run scripts/create_admin/main.go -username admin -password yourpassword
 ```
 
-6. 启动服务
+7. 构建前端
 ```bash
+make frontend-build
+# 或者
+cd frontend && npm run build
+```
+
+8. 启动服务
+```bash
+make run
+# 或者
 go run cmd/server/main.go
 ```
 
@@ -89,6 +115,11 @@ SESSION_MAX_AGE=86400
 
 # 日志配置
 LOG_LEVEL=info
+
+# 前端配置
+FRONTEND_ENABLED=true
+FRONTEND_STATIC_PATH=./frontend/dist
+FRONTEND_SPA_MODE=true
 ```
 
 ## 使用说明
@@ -155,7 +186,16 @@ GoShorty/
 ├── plugins/            # 插件实现
 │   └── expiration/     # 过期策略插件
 ├── scripts/            # 工具脚本
-├── web/                # Web资源
+├── frontend/           # 前端项目
+│   ├── src/           # 源代码
+│   │   ├── api/       # API客户端
+│   │   ├── components/ # React组件
+│   │   ├── pages/     # 页面组件
+│   │   ├── store/     # 状态管理
+│   │   └── types/     # TypeScript类型
+│   ├── dist/          # 构建输出
+│   └── vite.config.ts # Vite配置
+├── web/                # Web资源（旧模板）
 │   ├── templates/      # HTML模板
 │   └── static/         # 静态文件
 └── README.md
@@ -163,16 +203,49 @@ GoShorty/
 
 ## 开发
 
-### 编译
+### 开发模式
+
+**方式一：使用Make命令（推荐）**
 
 ```bash
-go build -o bin/goshorty ./cmd/server
+# 终端1：启动后端开发服务器
+make dev
+
+# 终端2：启动前端开发服务器（带热更新）
+make frontend-dev
+```
+
+前端开发服务器将在 `http://localhost:5173` 启动，并自动代理API请求到后端。
+
+**方式二：手动启动**
+
+```bash
+# 终端1：启动后端
+go run cmd/server/main.go
+
+# 终端2：启动前端
+cd frontend && npm run dev
+```
+
+### 生产构建
+
+```bash
+# 构建前端和后端
+make build-all
+
+# 或分别构建
+make frontend-build  # 构建前端
+make build          # 构建后端
 ```
 
 ### 运行测试
 
 ```bash
+# 后端测试
 go test ./...
+
+# 前端测试
+cd frontend && npm test
 ```
 
 ## 部署

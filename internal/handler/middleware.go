@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"GoShorty/internal/service"
 
@@ -29,8 +30,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		// 从Cookie中获取session_id
 		sessionID, err := c.Cookie("session_id")
 		if err != nil {
-			c.Redirect(http.StatusFound, "/admin/login")
-			c.Abort()
+			m.handleAuthFailure(c)
 			return
 		}
 
@@ -39,8 +39,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		if err != nil {
 			// 清除无效的Cookie
 			c.SetCookie("session_id", "", -1, "/", "", false, true)
-			c.Redirect(http.StatusFound, "/admin/login")
-			c.Abort()
+			m.handleAuthFailure(c)
 			return
 		}
 
@@ -49,5 +48,23 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		c.Set("session_id", session.ID)
 
 		c.Next()
+	}
+}
+
+// handleAuthFailure 处理认证失败的情况
+func (m *AuthMiddleware) handleAuthFailure(c *gin.Context) {
+	// 判断是否为API请求
+	if strings.HasPrefix(c.Request.URL.Path, "/admin/api/") {
+		// API请求返回JSON
+		c.JSON(http.StatusUnauthorized, APIError{
+			Success: false,
+			Error:   "未授权访问",
+			Code:    "UNAUTHORIZED",
+		})
+		c.Abort()
+	} else {
+		// 页面请求重定向到登录页
+		c.Redirect(http.StatusFound, "/admin/login")
+		c.Abort()
 	}
 }

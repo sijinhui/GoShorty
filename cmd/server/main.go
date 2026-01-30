@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 	"GoShorty/pkg/geolocation"
 	"GoShorty/plugins/expiration"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -86,12 +89,23 @@ func main() {
 
 	router := gin.Default()
 
+	// 配置CORS（开发环境）
+	if cfg.Log.Level != "production" {
+		router.Use(cors.New(cors.Config{
+			AllowOrigins:     []string{"http://localhost:5173"},
+			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
+			AllowCredentials: true,
+		}))
+	}
+
 	// 加载HTML模板
 	router.LoadHTMLGlob("web/templates/**/*.html")
 
 	// 管理后台路由（不需要认证）
 	router.GET("/admin/login", adminHandler.ShowLoginPage)
 	router.POST("/admin/login", adminHandler.HandleLogin)
+	router.POST("/admin/api/auth/login", adminHandler.HandleAPILogin)
 
 	// 管理后台路由（需要认证）
 	admin := router.Group("/admin")
@@ -114,9 +128,6 @@ func main() {
 		}
 	}
 
-	// 配置重定向路由（必须在其他路由之后，因为使用了通配符）
-	router.GET("/:code", redirectHandler.HandleRedirect)
-
 	// 健康检查端点
 	router.GET("/health", func(c *gin.Context) {
 		if err := db.Ping(c.Request.Context()); err != nil {
@@ -126,13 +137,47 @@ func main() {
 		c.JSON(200, gin.H{"status": "healthy"})
 	})
 
-	// 临时首页
-	router.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "GoShorty URL Shortener",
-			"version": "0.1.0",
+	// 公开API端点（不需要认证）
+	publicAPI := router.Group("/api")
+	{
+		publicAPI.POST("/links", apiHandler.CreatePublicLink)
+	}
+
+	// 配置前端静态文件服务
+	if cfg.Frontend.Enabled {
+		// 静态资源（CSS, JS, images等）
+		router.Static("/assets", filepath.Join(cfg.Frontend.StaticPath, "assets"))
+
+		logger.Info("Frontend static files enabled",
+			zap.String("path", cfg.Frontend.StaticPath),
+			zap.Bool("spa_mode", cfg.Frontend.SPAMode),
+		)
+	}
+
+	// 配置重定向路由（必须在其他路由之后，因为使用了通配符）
+	router.GET("/:code", redirectHandler.HandleRedirect)
+
+	// SPA fallback - 所有未匹配的路由返回index.html
+	if cfg.Frontend.Enabled && cfg.Frontend.SPAMode {
+		router.NoRoute(func(c *gin.Context) {
+			// 如果是API请求，返回404
+			if strings.HasPrefix(c.Request.URL.Path, "/api/") ||
+			   strings.HasPrefix(c.Request.URL.Path, "/admin/api/") {
+				c.JSON(404, gin.H{"error": "Not Found"})
+				return
+			}
+
+			// 尝试查找静态文件
+			filePath := filepath.Join(cfg.Frontend.StaticPath, c.Request.URL.Path)
+			if _, err := os.Stat(filePath); err == nil {
+				c.File(filePath)
+				return
+			}
+
+			// 其他请求返回index.html（让前端路由处理）
+			c.File(filepath.Join(cfg.Frontend.StaticPath, "index.html"))
 		})
-	})
+	}
 
 	// 启动服务器
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)

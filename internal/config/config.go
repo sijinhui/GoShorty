@@ -14,6 +14,7 @@ type Config struct {
 	Log      LogConfig
 	GeoIP    GeoIPConfig
 	Plugin   PluginConfig
+	Frontend FrontendConfig
 }
 
 type ServerConfig struct {
@@ -49,6 +50,12 @@ type GeoIPConfig struct {
 
 type PluginConfig struct {
 	DefaultExpiryDays int
+}
+
+type FrontendConfig struct {
+	Enabled    bool
+	StaticPath string
+	SPAMode    bool
 }
 
 func Load() (*Config, error) {
@@ -98,6 +105,11 @@ func Load() (*Config, error) {
 		Plugin: PluginConfig{
 			DefaultExpiryDays: viper.GetInt("DEFAULT_EXPIRY_DAYS"),
 		},
+		Frontend: FrontendConfig{
+			Enabled:    viper.GetBool("FRONTEND_ENABLED"),
+			StaticPath: viper.GetString("FRONTEND_STATIC_PATH"),
+			SPAMode:    viper.GetBool("FRONTEND_SPA_MODE"),
+		},
 	}
 
 	return config, nil
@@ -132,4 +144,9 @@ func setDefaults() {
 
 	// 插件默认值
 	viper.SetDefault("DEFAULT_EXPIRY_DAYS", 7)
+
+	// 前端默认值
+	viper.SetDefault("FRONTEND_ENABLED", true)
+	viper.SetDefault("FRONTEND_STATIC_PATH", "./frontend/dist")
+	viper.SetDefault("FRONTEND_SPA_MODE", true)
 }

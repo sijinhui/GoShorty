@@ -37,30 +37,27 @@ func (h *APIHandler) GetDashboardStats(c *gin.Context) {
 	stats, err := h.linkService.GetDashboardStats(c.Request.Context())
 	if err != nil {
 		h.logger.Error("Failed to get dashboard stats", zap.Error(err))
-		c.HTML(http.StatusInternalServerError, "components/error.html", gin.H{
-			"error": "获取统计数据失败",
-		})
+		RespondError(c, domain.ErrInternalServer)
 		return
 	}
 
-	c.HTML(http.StatusOK, "components/stats_cards.html", gin.H{
-		"stats": stats,
-	})
+	RespondSuccess(c, stats, "")
 }
 
 // CreateLink 创建短链接
 func (h *APIHandler) CreateLink(c *gin.Context) {
 	var req struct {
-		OriginalURL string `form:"original_url" binding:"required"`
-		ShortCode   string `form:"short_code"`
-		Title       string `form:"title"`
-		ExpiresAt   string `form:"expires_at"`
+		OriginalURL string `json:"original_url" binding:"required"`
+		ShortCode   string `json:"short_code"`
+		Title       string `json:"title"`
+		ExpiresAt   string `json:"expires_at"`
 	}
 
-	if err := c.ShouldBind(&req); err != nil {
-		c.HTML(http.StatusBadRequest, "components/alert.html", gin.H{
-			"type":    "error",
-			"message": "请填写原始链接",
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, APIError{
+			Success: false,
+			Error:   "请填写原始链接",
+			Code:    "INVALID_INPUT",
 		})
 		return
 	}
@@ -90,22 +87,26 @@ func (h *APIHandler) CreateLink(c *gin.Context) {
 	link, err := h.linkService.CreateLink(c.Request.Context(), createReq)
 	if err != nil {
 		h.logger.Error("Failed to create link", zap.Error(err))
-		c.HTML(http.StatusBadRequest, "components/alert.html", gin.H{
-			"type":    "error",
-			"message": err.Error(),
-		})
+		RespondError(c, err)
 		return
 	}
 
-	// 返回成功消息
+	// 构建短链接URL
 	baseURL := c.Request.Host
 	shortURL := "http://" + baseURL + "/" + link.ShortCode
 
-	c.HTML(http.StatusOK, "components/alert.html", gin.H{
-		"type":      "success",
-		"message":   "短链接创建成功！",
-		"short_url": shortURL,
-	})
+	// 返回链接对象
+	response := gin.H{
+		"id":           link.ID,
+		"short_code":   link.ShortCode,
+		"original_url": link.OriginalURL,
+		"short_url":    shortURL,
+		"title":        link.Title,
+		"created_at":   link.CreatedAt,
+		"expires_at":   link.ExpiresAt,
+	}
+
+	RespondSuccess(c, response, "短链接创建成功")
 }
 
 // GetLinks 获取链接列表
@@ -125,31 +126,29 @@ func (h *APIHandler) GetLinks(c *gin.Context) {
 	links, err := h.linkService.ListLinks(c.Request.Context(), 0, limit, offset)
 	if err != nil {
 		h.logger.Error("Failed to get links", zap.Error(err))
-		c.HTML(http.StatusInternalServerError, "components/error.html", gin.H{
-			"error": "获取链接列表失败",
-		})
+		RespondError(c, domain.ErrInternalServer)
 		return
 	}
 
 	// 计算分页信息
-	total := len(links) // 简化版本，实际应该查询总数
+	total := int64(len(links)) // 简化版本，实际应该查询总数
+	totalPages := int(total) / limit
+	if int(total)%limit > 0 {
+		totalPages++
+	}
 	hasNext := len(links) == limit
 	hasPrev := page > 1
 
-	c.HTML(http.StatusOK, "components/links_table.html", gin.H{
-		"links": links,
-		"pagination": gin.H{
-			"page":      page,
-			"limit":     limit,
-			"offset":    offset + 1,
-			"end":       offset + len(links),
-			"total":     total,
-			"has_next":  hasNext,
-			"has_prev":  hasPrev,
-			"next_page": page + 1,
-			"prev_page": page - 1,
-		},
-	})
+	pagination := PaginationMeta{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+		HasNext:    hasNext,
+		HasPrev:    hasPrev,
+	}
+
+	RespondPaginated(c, links, pagination)
 }
 
 // DeleteLink 删除链接
@@ -157,18 +156,22 @@ func (h *APIHandler) DeleteLink(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.Status(http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, APIError{
+			Success: false,
+			Error:   "无效的链接ID",
+			Code:    "INVALID_INPUT",
+		})
 		return
 	}
 
 	// 简化版本：使用固定用户ID，实际应该从session获取
 	if err := h.linkService.DeleteLink(c.Request.Context(), id, 1); err != nil {
 		h.logger.Error("Failed to delete link", zap.Error(err))
-		c.Status(http.StatusInternalServerError)
+		RespondError(c, err)
 		return
 	}
 
-	c.Status(http.StatusOK)
+	RespondSuccess(c, nil, "链接已删除")
 }
 
 // GetLinkAnalytics 获取链接统计数据
@@ -176,8 +179,10 @@ func (h *APIHandler) GetLinkAnalytics(c *gin.Context) {
 	linkIDStr := c.Query("link_id")
 	linkID, err := strconv.ParseInt(linkIDStr, 10, 64)
 	if err != nil {
-		c.HTML(http.StatusBadRequest, "components/error.html", gin.H{
-			"error": "无效的链接ID",
+		c.JSON(http.StatusBadRequest, APIError{
+			Success: false,
+			Error:   "无效的链接ID",
+			Code:    "INVALID_INPUT",
 		})
 		return
 	}
@@ -185,9 +190,7 @@ func (h *APIHandler) GetLinkAnalytics(c *gin.Context) {
 	// 获取链接信息
 	link, err := h.linkService.GetByID(c.Request.Context(), linkID)
 	if err != nil {
-		c.HTML(http.StatusNotFound, "components/error.html", gin.H{
-			"error": "链接不存在",
-		})
+		RespondError(c, err)
 		return
 	}
 
@@ -205,9 +208,62 @@ func (h *APIHandler) GetLinkAnalytics(c *gin.Context) {
 		countryStats = make(map[string]int64)
 	}
 
-	c.HTML(http.StatusOK, "components/analytics_detail.html", gin.H{
+	// 返回JSON格式的统计数据
+	response := gin.H{
 		"link":          link,
-		"logs":          logs,
+		"access_logs":   logs,
 		"country_stats": countryStats,
-	})
+	}
+
+	RespondSuccess(c, response, "")
+}
+
+// CreatePublicLink 公开创建短链接（不需要认证）
+func (h *APIHandler) CreatePublicLink(c *gin.Context) {
+	var req struct {
+		OriginalURL string `json:"original_url" binding:"required"`
+		ShortCode   string `json:"short_code"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, APIError{
+			Success: false,
+			Error:   "请填写原始链接",
+			Code:    "INVALID_INPUT",
+		})
+		return
+	}
+
+	// 创建链接请求（公开接口使用默认配置）
+	createReq := &service.CreateLinkRequest{
+		URL:        req.OriginalURL,
+		CustomCode: req.ShortCode,
+		Title:      "",
+		UserID:     1, // 公开链接使用默认用户ID
+		ExpiryDays: 7, // 默认7天过期
+	}
+
+	// 创建链接
+	link, err := h.linkService.CreateLink(c.Request.Context(), createReq)
+	if err != nil {
+		h.logger.Error("Failed to create public link", zap.Error(err))
+		RespondError(c, err)
+		return
+	}
+
+	// 构建短链接URL
+	baseURL := c.Request.Host
+	shortURL := "http://" + baseURL + "/" + link.ShortCode
+
+	// 返回链接对象
+	response := gin.H{
+		"id":           link.ID,
+		"short_code":   link.ShortCode,
+		"original_url": link.OriginalURL,
+		"short_url":    shortURL,
+		"created_at":   link.CreatedAt,
+		"expires_at":   link.ExpiresAt,
+	}
+
+	RespondSuccess(c, response, "短链接创建成功")
 }
