@@ -109,6 +109,7 @@ func main() {
 		// API路由
 		api := admin.Group("/api")
 		{
+			api.GET("/auth/check", adminHandler.HandleCheckAuth)
 			api.GET("/dashboard/stats", apiHandler.GetDashboardStats)
 			api.POST("/links", apiHandler.CreateLink)
 			api.GET("/links", apiHandler.GetLinks)
@@ -136,6 +137,24 @@ func main() {
 	if cfg.Frontend.Enabled {
 		// 静态资源（CSS, JS, images等）
 		router.Static("/assets", filepath.Join(cfg.Frontend.StaticPath, "assets"))
+
+		// 管理后台前端路由（返回index.html，让React处理路由）
+		adminPages := []string{"/admin", "/admin/login", "/admin/dashboard", "/admin/links", "/admin/analytics"}
+		for _, path := range adminPages {
+			router.GET(path, func(c *gin.Context) {
+				c.File(filepath.Join(cfg.Frontend.StaticPath, "index.html"))
+			})
+		}
+
+		// 根目录静态文件（vite.svg, react.svg等）
+		staticFiles := []string{"vite.svg", "react.svg", "favicon.ico"}
+		for _, file := range staticFiles {
+			file := file // 创建局部变量副本，避免闭包问题
+			filePath := filepath.Join(cfg.Frontend.StaticPath, file)
+			router.GET("/"+file, func(c *gin.Context) {
+				c.File(filePath)
+			})
+		}
 
 		logger.Info("Frontend static files enabled",
 			zap.String("path", cfg.Frontend.StaticPath),

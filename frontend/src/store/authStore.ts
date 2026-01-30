@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { login as loginAPI, logout as logoutAPI } from '../api/auth';
+import { login as loginAPI, logout as logoutAPI, checkAuth as checkAuthAPI } from '../api/auth';
 import type { LoginRequest } from '../types/api';
 
 interface AuthState {
@@ -8,6 +8,7 @@ interface AuthState {
   error: string | null;
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -41,6 +42,15 @@ export const useAuthStore = create<AuthState>((set) => ({
         isLoading: false,
         error: error.error || '登出失败',
       });
+    }
+  },
+
+  checkAuth: async () => {
+    try {
+      await checkAuthAPI();
+      set({ isAuthenticated: true });
+    } catch (error) {
+      set({ isAuthenticated: false });
     }
   },
 

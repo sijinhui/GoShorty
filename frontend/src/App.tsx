@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -12,25 +13,33 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   return <AdminLayout>{children}</AdminLayout>;
 }
 
 function App() {
+  const { checkAuth } = useAuthStore();
+
+  // 应用启动时验证会话
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   return (
     <BrowserRouter>
       <Routes>
         {/* 公开首页 */}
         <Route path="/" element={<Home />} />
 
-        {/* 登录页面 */}
-        <Route path="/login" element={<Login />} />
+        {/* 管理后台登录页面 */}
+        <Route path="/admin/login" element={<Login />} />
 
         {/* 管理后台路由 */}
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route
-          path="/dashboard"
+          path="/admin/dashboard"
           element={
             <ProtectedRoute>
               <Dashboard />
@@ -38,7 +47,7 @@ function App() {
           }
         />
         <Route
-          path="/links"
+          path="/admin/links"
           element={
             <ProtectedRoute>
               <Links />
@@ -46,7 +55,7 @@ function App() {
           }
         />
         <Route
-          path="/analytics"
+          path="/admin/analytics"
           element={
             <ProtectedRoute>
               <Analytics />

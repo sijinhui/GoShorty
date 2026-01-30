@@ -65,3 +65,22 @@ func (h *AdminHandler) HandleAPILogin(c *gin.Context) {
 	}, "登录成功")
 }
 
+// HandleCheckAuth 验证当前会话是否有效
+func (h *AdminHandler) HandleCheckAuth(c *gin.Context) {
+	// 从context中获取user_id（由认证中间件设置）
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, APIError{
+			Success: false,
+			Error:   "未授权访问",
+			Code:    "UNAUTHORIZED",
+		})
+		return
+	}
+
+	// 返回成功响应
+	RespondSuccess(c, gin.H{
+		"user_id": userID,
+	}, "会话有效")
+}
+

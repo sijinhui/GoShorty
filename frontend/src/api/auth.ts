@@ -12,12 +12,6 @@ export const logout = async (): Promise<APIResponse> => {
 };
 
 // 验证会话（可选，用于检查登录状态）
-export const checkAuth = async (): Promise<boolean> => {
-  try {
-    // 可以调用一个简单的API来验证会话
-    await apiClient.get('/dashboard/stats');
-    return true;
-  } catch (error) {
-    return false;
-  }
+export const checkAuth = async (): Promise<APIResponse> => {
+  return apiClient.get('/auth/check');
 };

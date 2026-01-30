@@ -4,9 +4,9 @@ export default function Sidebar() {
   const location = useLocation();
 
   const menuItems = [
-    { path: '/dashboard', label: '📊 仪表盘', icon: '📊' },
-    { path: '/links', label: '🔗 链接管理', icon: '🔗' },
-    { path: '/analytics', label: '📈 统计分析', icon: '📈' },
+    { path: '/admin/dashboard', label: '📊 仪表盘', icon: '📊' },
+    { path: '/admin/links', label: '🔗 链接管理', icon: '🔗' },
+    { path: '/admin/analytics', label: '📈 统计分析', icon: '📈' },
   ];
 
   return (

@@ -9,7 +9,7 @@ interface LinkTableProps {
 }
 
 export default function LinkTable({ links, pagination, onPageChange, onDelete }: LinkTableProps) {
-  if (links.length === 0) {
+  if (!links || links.length === 0) {
     return (
       <div style={{
         background: 'white',
