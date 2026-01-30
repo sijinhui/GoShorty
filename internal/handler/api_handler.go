@@ -122,8 +122,8 @@ func (h *APIHandler) GetLinks(c *gin.Context) {
 	}
 	offset := (page - 1) * limit
 
-	// 获取链接列表（userID=0表示获取所有用户的链接）
-	links, err := h.linkService.ListLinks(c.Request.Context(), 0, limit, offset)
+	// 获取链接列表
+	links, err := h.linkService.ListLinks(c.Request.Context(), limit, offset)
 	if err != nil {
 		h.logger.Error("Failed to get links", zap.Error(err))
 		RespondError(c, domain.ErrInternalServer)

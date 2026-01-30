@@ -19,7 +19,7 @@ type LinkRepository interface {
 	GetByShortCode(ctx context.Context, shortCode string) (*domain.Link, error)
 	Update(ctx context.Context, link *domain.Link) error
 	Delete(ctx context.Context, id int64) error
-	List(ctx context.Context, userID int, limit, offset int) ([]*domain.Link, error)
+	List(ctx context.Context, limit, offset int) ([]*domain.Link, error)
 	IncrementClickCount(ctx context.Context, id int64) error
 	DeleteExpired(ctx context.Context, before time.Time) error
 	ExistsShortCode(ctx context.Context, shortCode string) (bool, error)
@@ -198,17 +198,16 @@ func (r *PostgresLinkRepository) Delete(ctx context.Context, id int64) error {
 }
 
 // List 获取链接列表
-func (r *PostgresLinkRepository) List(ctx context.Context, userID int, limit, offset int) ([]*domain.Link, error) {
+func (r *PostgresLinkRepository) List(ctx context.Context, limit, offset int) ([]*domain.Link, error) {
 	query := `
 		SELECT id, short_code, original_url, title, user_id, created_at, expires_at,
 		       is_active, click_count, last_clicked_at, custom_code, metadata
 		FROM links
-		WHERE user_id = $1
 		ORDER BY created_at DESC
-		LIMIT $2 OFFSET $3
+		LIMIT $1 OFFSET $2
 	`
 
-	rows, err := r.pool.Query(ctx, query, userID, limit, offset)
+	rows, err := r.pool.Query(ctx, query, limit, offset)
 	if err != nil {
 		return nil, err
 	}

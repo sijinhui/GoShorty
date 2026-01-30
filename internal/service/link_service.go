@@ -19,7 +19,7 @@ type LinkService interface {
 	GetByID(ctx context.Context, id int64) (*domain.Link, error)
 	UpdateLink(ctx context.Context, req *UpdateLinkRequest) error
 	DeleteLink(ctx context.Context, id int64, userID int) error
-	ListLinks(ctx context.Context, userID int, limit, offset int) ([]*domain.Link, error)
+	ListLinks(ctx context.Context, limit, offset int) ([]*domain.Link, error)
 	IncrementClickCount(ctx context.Context, id int64) error
 	GetDashboardStats(ctx context.Context) (map[string]interface{}, error)
 }
@@ -35,12 +35,12 @@ type CreateLinkRequest struct {
 
 // UpdateLinkRequest 更新链接请求
 type UpdateLinkRequest struct {
-	ID         int64
-	URL        string
-	Title      string
-	ExpiresAt  *time.Time
-	IsActive   bool
-	UserID     int
+	ID        int64
+	URL       string
+	Title     string
+	ExpiresAt *time.Time
+	IsActive  bool
+	UserID    int
 }
 
 // linkService 链接服务实现
@@ -268,8 +268,8 @@ func (s *linkService) DeleteLink(ctx context.Context, id int64, userID int) erro
 }
 
 // ListLinks 获取链接列表
-func (s *linkService) ListLinks(ctx context.Context, userID int, limit, offset int) ([]*domain.Link, error) {
-	return s.linkRepo.List(ctx, userID, limit, offset)
+func (s *linkService) ListLinks(ctx context.Context, limit, offset int) ([]*domain.Link, error) {
+	return s.linkRepo.List(ctx, limit, offset)
 }
 
 // IncrementClickCount 增加点击计数
@@ -280,7 +280,7 @@ func (s *linkService) IncrementClickCount(ctx context.Context, id int64) error {
 // GetDashboardStats 获取仪表盘统计数据
 func (s *linkService) GetDashboardStats(ctx context.Context) (map[string]interface{}, error) {
 	// 获取所有链接（简化版本，实际应该使用专门的统计查询）
-	links, err := s.linkRepo.List(ctx, 0, 10000, 0)
+	links, err := s.linkRepo.List(ctx, 10000, 0)
 	if err != nil {
 		return nil, err
 	}
