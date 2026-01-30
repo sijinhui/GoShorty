@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -10,10 +10,25 @@ import { useAuthStore } from './store/authStore';
 
 // 受保护的路由组件
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isLoading } = useAuthStore();
+  const location = useLocation();
+
+  // 认证检查期间显示加载指示器
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">验证会话中...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+    // 保存当前路径，登录成功后重定向回来
+    const redirectPath = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/admin/login?redirect=${redirectPath}`} replace />;
   }
 
   return <AdminLayout>{children}</AdminLayout>;

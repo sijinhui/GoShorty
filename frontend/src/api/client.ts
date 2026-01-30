@@ -32,8 +32,10 @@ apiClient.interceptors.response.use(
 
       // 处理401未授权错误
       if (error.response.status === 401) {
-        // 清除本地认证状态
-        window.location.href = '/login';
+        // 只有不在登录页时才重定向，避免无限循环
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/admin/login';
+        }
       }
 
       return Promise.reject(apiError);

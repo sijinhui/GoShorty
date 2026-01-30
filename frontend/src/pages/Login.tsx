@@ -1,13 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+
+// 添加旋转动画样式
+const spinnerStyle = document.createElement('style');
+spinnerStyle.textContent = `
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+if (!document.head.querySelector('style[data-spinner]')) {
+  spinnerStyle.setAttribute('data-spinner', 'true');
+  document.head.appendChild(spinnerStyle);
+}
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const [showRedirectMessage, setShowRedirectMessage] = useState(false);
+  const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // 获取重定向路径，如果没有则默认为 /admin
+  const getRedirectPath = () => {
+    const redirect = searchParams.get('redirect');
+    return redirect ? decodeURIComponent(redirect) : '/admin';
+  };
+
+  // 如果用户已登录，显示提示并在2秒后跳转
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      setShowRedirectMessage(true);
+      const timer = setTimeout(() => {
+        navigate(getRedirectPath(), { replace: true });
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, isAuthenticated, navigate, searchParams]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -15,7 +48,7 @@ export default function Login() {
 
     try {
       await login({ username, password });
-      navigate('/admin/dashboard');
+      navigate(getRedirectPath());
     } catch (err) {
       // 错误已经在store中处理
     }
@@ -46,19 +79,47 @@ export default function Login() {
           GoShorty 登录
         </h1>
 
-        {error && (
+        {showRedirectMessage ? (
           <div style={{
-            background: '#fee',
-            color: '#c33',
-            padding: '0.75rem',
+            background: '#d4edda',
+            color: '#155724',
+            padding: '1rem',
             borderRadius: '4px',
-            marginBottom: '1rem',
+            textAlign: 'center',
           }}>
-            {error}
+            <div style={{ marginBottom: '0.5rem', fontSize: '1.1rem', fontWeight: '500' }}>
+              您已登录
+            </div>
+            <div style={{ fontSize: '0.9rem' }}>
+              即将跳转到管理后台...
+            </div>
+            <div style={{ marginTop: '1rem' }}>
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-green-600" style={{
+                display: 'inline-block',
+                width: '24px',
+                height: '24px',
+                border: '2px solid transparent',
+                borderBottomColor: '#28a745',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+              }}></div>
+            </div>
           </div>
-        )}
+        ) : (
+          <>
+            {error && (
+              <div style={{
+                background: '#fee',
+                color: '#c33',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                marginBottom: '1rem',
+              }}>
+                {error}
+              </div>
+            )}
 
-        <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{
               display: 'block',
@@ -123,6 +184,8 @@ export default function Login() {
             {isLoading ? '登录中...' : '登录'}
           </button>
         </form>
+        </>
+        )}
       </div>
     </div>
   );
