@@ -99,24 +99,13 @@ func main() {
 		}))
 	}
 
-	// 加载HTML模板
-	router.LoadHTMLGlob("web/templates/**/*.html")
-
 	// 管理后台路由（不需要认证）
-	router.GET("/admin/login", adminHandler.ShowLoginPage)
-	router.POST("/admin/login", adminHandler.HandleLogin)
 	router.POST("/admin/api/auth/login", adminHandler.HandleAPILogin)
 
-	// 管理后台路由（需要认证）
+	// 管理后台API路由（需要认证）
 	admin := router.Group("/admin")
 	admin.Use(authMiddleware.RequireAuth())
 	{
-		// 页面路由
-		admin.GET("/dashboard", adminHandler.ShowDashboard)
-		admin.GET("/links", adminHandler.ShowLinks)
-		admin.GET("/analytics", adminHandler.ShowAnalytics)
-		admin.POST("/logout", adminHandler.HandleLogout)
-
 		// API路由
 		api := admin.Group("/api")
 		{

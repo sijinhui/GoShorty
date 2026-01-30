@@ -85,21 +85,13 @@ func (h *RedirectHandler) HandleRedirect(c *gin.Context) {
 func (h *RedirectHandler) handleError(c *gin.Context, err error) {
 	switch err {
 	case domain.ErrLinkNotFound:
-		c.HTML(http.StatusNotFound, "404.html", gin.H{
-			"message": "短链接不存在",
-		})
+		c.String(http.StatusNotFound, "短链接不存在")
 	case domain.ErrLinkExpired:
-		c.HTML(http.StatusGone, "410.html", gin.H{
-			"message": "短链接已过期",
-		})
+		c.String(http.StatusGone, "短链接已过期")
 	case domain.ErrLinkInactive:
-		c.HTML(http.StatusGone, "410.html", gin.H{
-			"message": "短链接已被禁用",
-		})
+		c.String(http.StatusGone, "短链接已被禁用")
 	default:
 		h.logger.Error("redirect error", zap.Error(err))
-		c.HTML(http.StatusInternalServerError, "500.html", gin.H{
-			"message": "服务器内部错误",
-		})
+		c.String(http.StatusInternalServerError, "服务器内部错误")
 	}
 }
