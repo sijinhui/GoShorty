@@ -1,0 +1,169 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"GoShorty/internal/config"
+	"GoShorty/internal/database"
+	"GoShorty/internal/handler"
+	"GoShorty/internal/plugin"
+	"GoShorty/internal/repository"
+	"GoShorty/internal/service"
+	"GoShorty/pkg/geolocation"
+	"GoShorty/plugins/expiration"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+)
+
+func main() {
+	// 初始化日志
+	logger, err := initLogger()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
+		os.Exit(1)
+	}
+	defer logger.Sync()
+
+	logger.Info("Starting GoShorty...")
+
+	// 加载配置
+	cfg, err := config.Load()
+	if err != nil {
+		logger.Fatal("Failed to load config", zap.Error(err))
+	}
+
+	logger.Info("Configuration loaded",
+		zap.String("host", cfg.Server.Host),
+		zap.Int("port", cfg.Server.Port),
+	)
+
+	// 连接数据库
+	db, err := database.NewPostgresDB(&cfg.Database, logger)
+	if err != nil {
+		logger.Fatal("Failed to connect to database", zap.Error(err))
+	}
+	defer db.Close()
+
+	// 初始化Repository层
+	linkRepo := repository.NewPostgresLinkRepository(db.Pool)
+	userRepo := repository.NewPostgresUserRepository(db.Pool)
+	sessionRepo := repository.NewPostgresSessionRepository(db.Pool)
+	analyticsRepo := repository.NewPostgresAnalyticsRepository(db.Pool)
+
+	// 初始化插件系统
+	pluginManager := plugin.NewManager(logger)
+	hooks := plugin.NewHooks(pluginManager, logger)
+
+	// 注册7天过期插件
+	expiryPlugin := expiration.NewSevenDayExpiryPlugin()
+	if err := pluginManager.Register(expiryPlugin); err != nil {
+		logger.Warn("Failed to register expiry plugin", zap.Error(err))
+	}
+
+	// 初始化Service层
+	codeGenerator := service.NewBase62Generator(6)
+	linkService := service.NewLinkService(linkRepo, codeGenerator, hooks, logger)
+	authService := service.NewAuthService(userRepo, sessionRepo, cfg.Session.MaxAge, logger)
+	geoResolver := geolocation.NewSimpleGeoIPResolver()
+	analyticsService := service.NewAnalyticsService(analyticsRepo, geoResolver, logger)
+
+	// 初始化Handler层
+	redirectHandler := handler.NewRedirectHandler(linkService, analyticsService, logger)
+	authMiddleware := handler.NewAuthMiddleware(authService, logger)
+	adminHandler := handler.NewAdminHandler(authService, linkService, logger)
+	apiHandler := handler.NewAPIHandler(linkService, analyticsService, logger)
+
+	// 初始化Gin
+	if cfg.Log.Level == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	router := gin.Default()
+
+	// 加载HTML模板
+	router.LoadHTMLGlob("web/templates/**/*.html")
+
+	// 管理后台路由（不需要认证）
+	router.GET("/admin/login", adminHandler.ShowLoginPage)
+	router.POST("/admin/login", adminHandler.HandleLogin)
+
+	// 管理后台路由（需要认证）
+	admin := router.Group("/admin")
+	admin.Use(authMiddleware.RequireAuth())
+	{
+		// 页面路由
+		admin.GET("/dashboard", adminHandler.ShowDashboard)
+		admin.GET("/links", adminHandler.ShowLinks)
+		admin.GET("/analytics", adminHandler.ShowAnalytics)
+		admin.POST("/logout", adminHandler.HandleLogout)
+
+		// API路由
+		api := admin.Group("/api")
+		{
+			api.GET("/dashboard/stats", apiHandler.GetDashboardStats)
+			api.POST("/links", apiHandler.CreateLink)
+			api.GET("/links", apiHandler.GetLinks)
+			api.DELETE("/links/:id", apiHandler.DeleteLink)
+			api.GET("/analytics/link", apiHandler.GetLinkAnalytics)
+		}
+	}
+
+	// 配置重定向路由（必须在其他路由之后，因为使用了通配符）
+	router.GET("/:code", redirectHandler.HandleRedirect)
+
+	// 健康检查端点
+	router.GET("/health", func(c *gin.Context) {
+		if err := db.Ping(c.Request.Context()); err != nil {
+			c.JSON(500, gin.H{"status": "unhealthy", "error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"status": "healthy"})
+	})
+
+	// 临时首页
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "GoShorty URL Shortener",
+			"version": "0.1.0",
+		})
+	})
+
+	// 启动服务器
+	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	logger.Info("Server starting", zap.String("address", addr))
+
+	// 优雅关闭
+	srv := &gin.Engine{}
+	*srv = *router
+
+	go func() {
+		if err := router.Run(addr); err != nil {
+			logger.Fatal("Failed to start server", zap.Error(err))
+		}
+	}()
+
+	// 等待中断信号
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logger.Info("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 这里可以添加清理逻辑
+	_ = ctx
+
+	logger.Info("Server stopped")
+}
+
+func initLogger() (*zap.Logger, error) {
+	return zap.NewProduction()
+}

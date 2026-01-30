@@ -1,0 +1,14 @@
+{{if .type}}
+<div class="alert alert-{{.type}}">
+    {{.message}}
+    {{if .short_url}}
+    <div class="mt-2">
+        <strong>短链接：</strong>
+        <a href="{{.short_url}}" target="_blank">{{.short_url}}</a>
+        <button onclick="navigator.clipboard.writeText('{{.short_url}}')" class="btn btn-secondary btn-small" style="margin-left: 0.5rem;">
+            复制
+        </button>
+    </div>
+    {{end}}
+</div>
+{{end}}

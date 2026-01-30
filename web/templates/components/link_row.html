@@ -1,0 +1,45 @@
+{{range .links}}
+<tr id="link-{{.ID}}">
+    <td>
+        <strong>{{.ShortCode}}</strong>
+        {{if .CustomCode}}<span class="badge badge-success">自定义</span>{{end}}
+    </td>
+    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <a href="{{.OriginalURL}}" target="_blank" title="{{.OriginalURL}}">{{.OriginalURL}}</a>
+    </td>
+    <td>{{.ClickCount}}</td>
+    <td>
+        {{if .IsActive}}
+            {{if .IsExpired}}
+                <span class="badge badge-danger">已过期</span>
+            {{else}}
+                <span class="badge badge-success">活跃</span>
+            {{end}}
+        {{else}}
+            <span class="badge badge-warning">已禁用</span>
+        {{end}}
+    </td>
+    <td>{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
+    <td>
+        <div class="flex gap-1">
+            <button class="btn btn-secondary btn-small"
+                    hx-get="/admin/api/links/{{.ID}}/analytics"
+                    hx-target="#modal-content"
+                    hx-swap="innerHTML">
+                统计
+            </button>
+            <button class="btn btn-danger btn-small"
+                    hx-delete="/admin/api/links/{{.ID}}"
+                    hx-confirm="确定要删除这个短链接吗？"
+                    hx-target="#link-{{.ID}}"
+                    hx-swap="outerHTML">
+                删除
+            </button>
+        </div>
+    </td>
+</tr>
+{{else}}
+<tr>
+    <td colspan="6" class="text-center text-muted">暂无链接</td>
+</tr>
+{{end}}

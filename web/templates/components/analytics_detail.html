@@ -1,0 +1,78 @@
+<div class="card mb-3">
+    <div class="card-header">
+        <h3>链接信息</h3>
+    </div>
+    <div style="padding: 1rem;">
+        <p><strong>短码：</strong> {{.link.ShortCode}}</p>
+        <p><strong>原始链接：</strong> <a href="{{.link.OriginalURL}}" target="_blank">{{.link.OriginalURL}}</a></p>
+        <p><strong>总点击数：</strong> {{.link.ClickCount}}</p>
+        <p><strong>创建时间：</strong> {{.link.CreatedAt.Format "2006-01-02 15:04:05"}}</p>
+        {{if .link.ExpiresAt}}
+        <p><strong>过期时间：</strong> {{.link.ExpiresAt.Format "2006-01-02 15:04:05"}}</p>
+        {{end}}
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">
+        <h3>国家/地区分布</h3>
+    </div>
+    <div style="padding: 1rem;">
+        {{if .country_stats}}
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>国家/地区</th>
+                    <th>访问次数</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range $country, $count := .country_stats}}
+                <tr>
+                    <td>{{$country}}</td>
+                    <td>{{$count}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        {{else}}
+        <p class="text-muted">暂无数据</p>
+        {{end}}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>访问日志（最近50条）</h3>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>访问时间</th>
+                    <th>IP地址</th>
+                    <th>国家/地区</th>
+                    <th>城市</th>
+                    <th>来源</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .logs}}
+                <tr>
+                    <td>{{.AccessedAt.Format "2006-01-02 15:04:05"}}</td>
+                    <td>{{.IPAddress}}</td>
+                    <td>{{.Country}}</td>
+                    <td>{{.City}}</td>
+                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {{if .Referer}}{{.Referer}}{{else}}-{{end}}
+                    </td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">暂无访问记录</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
