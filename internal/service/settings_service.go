@@ -15,6 +15,12 @@ type SettingsService interface {
 	GetShortCodeLength(ctx context.Context) (int, error)
 	UpdateShortCodeLength(ctx context.Context, length int) error
 	GetSystemSettings(ctx context.Context) (*domain.SystemSettings, error)
+
+	// 插件配置方法
+	GetPluginConfig(ctx context.Context, pluginName, key string) (string, error)
+	SetPluginConfig(ctx context.Context, pluginName, key, value string) error
+	GetPluginEnabled(ctx context.Context, pluginName string) (bool, error)
+	SetPluginEnabled(ctx context.Context, pluginName string, enabled bool) error
 }
 
 // settingsService 设置服务实现
@@ -85,4 +91,60 @@ func (s *settingsService) GetSystemSettings(ctx context.Context) (*domain.System
 	return &domain.SystemSettings{
 		ShortCodeLength: length,
 	}, nil
+}
+
+// GetPluginConfig 获取插件配置值
+func (s *settingsService) GetPluginConfig(ctx context.Context, pluginName, key string) (string, error) {
+	settingKey := "plugin." + pluginName + "." + key
+	setting, err := s.settingsRepo.GetByKey(ctx, settingKey)
+	if err != nil {
+		s.logger.Error("failed to get plugin config",
+			zap.String("plugin", pluginName),
+			zap.String("key", key),
+			zap.Error(err))
+		return "", err
+	}
+	return setting.Value, nil
+}
+
+// SetPluginConfig 设置插件配置值
+func (s *settingsService) SetPluginConfig(ctx context.Context, pluginName, key, value string) error {
+	settingKey := "plugin." + pluginName + "." + key
+	if err := s.settingsRepo.Update(ctx, settingKey, value); err != nil {
+		s.logger.Error("failed to set plugin config",
+			zap.String("plugin", pluginName),
+			zap.String("key", key),
+			zap.String("value", value),
+			zap.Error(err))
+		return err
+	}
+	s.logger.Info("plugin config updated",
+		zap.String("plugin", pluginName),
+		zap.String("key", key))
+	return nil
+}
+
+// GetPluginEnabled 获取插件启用状态
+func (s *settingsService) GetPluginEnabled(ctx context.Context, pluginName string) (bool, error) {
+	value, err := s.GetPluginConfig(ctx, pluginName, "enabled")
+	if err != nil {
+		return false, err
+	}
+
+	enabled, err := strconv.ParseBool(value)
+	if err != nil {
+		s.logger.Error("failed to parse plugin enabled status",
+			zap.String("plugin", pluginName),
+			zap.String("value", value),
+			zap.Error(err))
+		return false, err
+	}
+
+	return enabled, nil
+}
+
+// SetPluginEnabled 设置插件启用状态
+func (s *settingsService) SetPluginEnabled(ctx context.Context, pluginName string, enabled bool) error {
+	value := strconv.FormatBool(enabled)
+	return s.SetPluginConfig(ctx, pluginName, "enabled", value)
 }
