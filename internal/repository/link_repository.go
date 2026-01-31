@@ -43,7 +43,7 @@ func (r *PostgresLinkRepository) Create(ctx context.Context, link *domain.Link) 
 	}
 
 	query := `
-		INSERT INTO links (short_code, original_url, title, user_id, expires_at, is_active, custom_code, metadata)
+		INSERT INTO links (short_code, original_url, title, user_id, created_ip, is_active, custom_code, metadata)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, created_at
 	`
@@ -53,7 +53,7 @@ func (r *PostgresLinkRepository) Create(ctx context.Context, link *domain.Link) 
 		link.OriginalURL,
 		link.Title,
 		link.UserID,
-		link.ExpiresAt,
+		link.CreatedIP,
 		link.IsActive,
 		link.CustomCode,
 		metadataJSON,
@@ -69,7 +69,7 @@ func (r *PostgresLinkRepository) Create(ctx context.Context, link *domain.Link) 
 // GetByID 根据ID获取链接
 func (r *PostgresLinkRepository) GetByID(ctx context.Context, id int64) (*domain.Link, error) {
 	query := `
-		SELECT id, short_code, original_url, title, user_id, created_at, expires_at,
+		SELECT id, short_code, original_url, title, user_id, created_at, created_ip,
 		       is_active, click_count, last_clicked_at, custom_code, metadata
 		FROM links
 		WHERE id = $1
@@ -85,7 +85,7 @@ func (r *PostgresLinkRepository) GetByID(ctx context.Context, id int64) (*domain
 		&link.Title,
 		&link.UserID,
 		&link.CreatedAt,
-		&link.ExpiresAt,
+		&link.CreatedIP,
 		&link.IsActive,
 		&link.ClickCount,
 		&link.LastClickedAt,
@@ -110,7 +110,7 @@ func (r *PostgresLinkRepository) GetByID(ctx context.Context, id int64) (*domain
 // GetByShortCode 根据短码获取链接
 func (r *PostgresLinkRepository) GetByShortCode(ctx context.Context, shortCode string) (*domain.Link, error) {
 	query := `
-		SELECT id, short_code, original_url, title, user_id, created_at, expires_at,
+		SELECT id, short_code, original_url, title, user_id, created_at, created_ip,
 		       is_active, click_count, last_clicked_at, custom_code, metadata
 		FROM links
 		WHERE short_code = $1
@@ -126,7 +126,7 @@ func (r *PostgresLinkRepository) GetByShortCode(ctx context.Context, shortCode s
 		&link.Title,
 		&link.UserID,
 		&link.CreatedAt,
-		&link.ExpiresAt,
+		&link.CreatedIP,
 		&link.IsActive,
 		&link.ClickCount,
 		&link.LastClickedAt,
@@ -157,14 +157,13 @@ func (r *PostgresLinkRepository) Update(ctx context.Context, link *domain.Link) 
 
 	query := `
 		UPDATE links
-		SET original_url = $1, title = $2, expires_at = $3, is_active = $4, metadata = $5
-		WHERE id = $6
+		SET original_url = $1, title = $2, is_active = $3, metadata = $4
+		WHERE id = $5
 	`
 
 	result, err := r.pool.Exec(ctx, query,
 		link.OriginalURL,
 		link.Title,
-		link.ExpiresAt,
 		link.IsActive,
 		metadataJSON,
 		link.ID,
@@ -200,7 +199,7 @@ func (r *PostgresLinkRepository) Delete(ctx context.Context, id int64) error {
 // List 获取链接列表
 func (r *PostgresLinkRepository) List(ctx context.Context, limit, offset int) ([]*domain.Link, error) {
 	query := `
-		SELECT id, short_code, original_url, title, user_id, created_at, expires_at,
+		SELECT id, short_code, original_url, title, user_id, created_at, created_ip,
 		       is_active, click_count, last_clicked_at, custom_code, metadata
 		FROM links
 		ORDER BY created_at DESC
@@ -225,7 +224,7 @@ func (r *PostgresLinkRepository) List(ctx context.Context, limit, offset int) ([
 			&link.Title,
 			&link.UserID,
 			&link.CreatedAt,
-			&link.ExpiresAt,
+			&link.CreatedIP,
 			&link.IsActive,
 			&link.ClickCount,
 			&link.LastClickedAt,

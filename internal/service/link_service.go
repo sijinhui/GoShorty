@@ -31,39 +31,42 @@ type CreateLinkRequest struct {
 	CustomCode string
 	Title      string
 	UserID     int
+	CreatedIP  string
 	ExpiryDays int
 }
 
 // UpdateLinkRequest 更新链接请求
 type UpdateLinkRequest struct {
-	ID        int64
-	URL       string
-	Title     string
-	ExpiresAt *time.Time
-	IsActive  bool
-	UserID    int
+	ID       int64
+	URL      string
+	Title    string
+	IsActive bool
+	UserID   int
 }
 
 // linkService 链接服务实现
 type linkService struct {
-	linkRepo      repository.LinkRepository
-	codeGenerator ShortCodeGenerator
-	hooks         *plugin.Hooks
-	logger        *zap.Logger
+	linkRepo       repository.LinkRepository
+	linkExpiryRepo repository.LinkExpiryRepository
+	codeGenerator  ShortCodeGenerator
+	hooks          *plugin.Hooks
+	logger         *zap.Logger
 }
 
 // NewLinkService 创建一个新的链接服务
 func NewLinkService(
 	linkRepo repository.LinkRepository,
+	linkExpiryRepo repository.LinkExpiryRepository,
 	codeGenerator ShortCodeGenerator,
 	hooks *plugin.Hooks,
 	logger *zap.Logger,
 ) LinkService {
 	return &linkService{
-		linkRepo:      linkRepo,
-		codeGenerator: codeGenerator,
-		hooks:         hooks,
-		logger:        logger,
+		linkRepo:       linkRepo,
+		linkExpiryRepo: linkExpiryRepo,
+		codeGenerator:  codeGenerator,
+		hooks:          hooks,
+		logger:         logger,
 	}
 }
 
@@ -126,32 +129,40 @@ func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*
 		isCustom = false
 	}
 
-	// 计算过期时间
-	var expiresAt *time.Time
-	if req.ExpiryDays > 0 {
-		expiry := time.Now().AddDate(0, 0, req.ExpiryDays)
-		expiresAt = &expiry
-	}
-
 	// 创建链接对象
 	link := &domain.Link{
 		ShortCode:   shortCode,
 		OriginalURL: normalizedURL,
 		Title:       req.Title,
 		UserID:      req.UserID,
-		ExpiresAt:   expiresAt,
+		CreatedIP:   &req.CreatedIP,
 		IsActive:    true,
 		CustomCode:  isCustom,
 		Metadata:    make(map[string]interface{}),
 	}
 
-	// 使用插件计算过期时间（如果没有指定过期时间）
-	if s.hooks != nil && expiresAt == nil {
+	// 计算过期时间（用于创建 LinkExpiry 记录）
+	var expiryDays int
+	var expiresAt *time.Time
+
+	if req.ExpiryDays > 0 {
+		// 用户指定了过期天数
+		expiryDays = req.ExpiryDays
+		expiry := time.Now().AddDate(0, 0, expiryDays)
+		expiresAt = &expiry
+	} else if s.hooks != nil {
+		// 使用插件计算过期时间
 		pluginExpiry, err := s.hooks.CalculateExpiry(ctx, link)
 		if err != nil {
 			s.logger.Warn("plugin expiry calculation failed", zap.Error(err))
 		} else if pluginExpiry != nil {
-			link.ExpiresAt = pluginExpiry
+			expiresAt = pluginExpiry
+			// 计算天数
+			duration := time.Until(*pluginExpiry)
+			expiryDays = int(duration.Hours() / 24)
+			if expiryDays < 1 {
+				expiryDays = 1
+			}
 		}
 	}
 
@@ -167,6 +178,24 @@ func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*
 	if err := s.linkRepo.Create(ctx, link); err != nil {
 		s.logger.Error("failed to create link", zap.Error(err))
 		return nil, err
+	}
+
+	// 如果有过期时间，创建 LinkExpiry 记录
+	if expiresAt != nil && expiryDays > 0 {
+		linkExpiry := &domain.LinkExpiry{
+			ShortCode:     link.ShortCode,
+			LifecycleDays: expiryDays,
+			ExpiresAt:     *expiresAt,
+		}
+		if err := s.linkExpiryRepo.Create(ctx, linkExpiry); err != nil {
+			s.logger.Error("failed to create link expiry", zap.Error(err))
+			// 不返回错误，因为链接已经创建成功
+		} else {
+			s.logger.Info("link expiry created",
+				zap.String("short_code", link.ShortCode),
+				zap.Int("lifecycle_days", expiryDays),
+			)
+		}
 	}
 
 	// 执行创建后钩子
@@ -192,13 +221,20 @@ func (s *linkService) GetByShortCode(ctx context.Context, shortCode string) (*do
 		return nil, err
 	}
 
-	// 检查链接是否有效
+	// 检查链接是否活跃
 	if !link.IsValid() {
-		if link.IsExpired() {
-			return nil, domain.ErrLinkExpired
-		}
 		return nil, domain.ErrLinkInactive
 	}
+
+	// 检查链接是否过期（查询 link_expiry 表）
+	linkExpiry, err := s.linkExpiryRepo.GetByShortCode(ctx, shortCode)
+	if err == nil && linkExpiry != nil {
+		// 找到过期记录，检查是否已过期
+		if linkExpiry.IsExpired() {
+			return nil, domain.ErrLinkExpired
+		}
+	}
+	// 如果没有过期记录或查询失败，认为链接不会过期，继续返回
 
 	return link, nil
 }
@@ -233,9 +269,6 @@ func (s *linkService) UpdateLink(ctx context.Context, req *UpdateLinkRequest) er
 	// 更新字段
 	if req.Title != "" {
 		link.Title = req.Title
-	}
-	if req.ExpiresAt != nil {
-		link.ExpiresAt = req.ExpiresAt
 	}
 	link.IsActive = req.IsActive
 
@@ -298,7 +331,7 @@ func (s *linkService) GetDashboardStats(ctx context.Context) (map[string]interfa
 	today := time.Now().Truncate(24 * time.Hour)
 
 	for _, link := range links {
-		if link.IsActive && !link.IsExpired() {
+		if link.IsActive {
 			activeLinks++
 		}
 		totalClicks += link.ClickCount
