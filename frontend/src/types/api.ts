@@ -34,7 +34,7 @@ export interface Link {
   title?: string;
   user_id: number;
   created_at: string;
-  expires_at?: string;
+  created_ip?: string;
   is_active: boolean;
   click_count: number;
   last_clicked_at?: string;
@@ -98,7 +98,6 @@ export interface CreateLinkResponse {
   short_url: string;
   title?: string;
   created_at: string;
-  expires_at?: string;
 }
 
 // 系统设置类型

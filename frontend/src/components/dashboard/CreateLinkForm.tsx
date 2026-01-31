@@ -12,7 +12,6 @@ export default function CreateLinkForm({ onSuccess }: CreateLinkFormProps) {
     original_url: '',
     short_code: '',
     title: '',
-    expires_at: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +30,6 @@ export default function CreateLinkForm({ onSuccess }: CreateLinkFormProps) {
         original_url: '',
         short_code: '',
         title: '',
-        expires_at: '',
       });
       if (onSuccess) {
         onSuccess();

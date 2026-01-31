@@ -19,7 +19,6 @@ export const createPublicLink = async (data: {
   original_url: string;
   short_url: string;
   created_at: string;
-  expires_at: string;
 }>> => {
   const response = await publicClient.post('/links', data);
   return response.data;
