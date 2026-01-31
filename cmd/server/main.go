@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -55,10 +56,14 @@ func main() {
 
 	// 初始化Repository层
 	linkRepo := repository.NewPostgresLinkRepository(db.Pool)
+	linkExpiryRepo := repository.NewPostgresLinkExpiryRepository(db.Pool)
 	userRepo := repository.NewPostgresUserRepository(db.Pool)
 	sessionRepo := repository.NewPostgresSessionRepository(db.Pool)
 	analyticsRepo := repository.NewPostgresAnalyticsRepository(db.Pool)
 	settingsRepo := repository.NewPostgresSettingsRepository(db.Pool)
+
+	// 初始化Service层（需要先创建settingsService以便加载插件配置）
+	settingsService := service.NewSettingsService(settingsRepo, logger)
 
 	// 初始化插件系统
 	pluginManager := plugin.NewManager(logger)
@@ -66,12 +71,28 @@ func main() {
 
 	// 注册7天过期插件
 	expiryPlugin := expiration.NewSevenDayExpiryPlugin()
+
+	// 从数据库加载插件配置
+	ctx := context.Background()
+	if enabled, err := settingsService.GetPluginEnabled(ctx, "seven_day_expiry"); err == nil {
+		expiryPlugin.SetEnabled(enabled)
+		logger.Info("Loaded plugin enabled status", zap.Bool("enabled", enabled))
+	} else {
+		logger.Warn("Failed to load plugin enabled status, using default", zap.Error(err))
+	}
+
+	if daysStr, err := settingsService.GetPluginConfig(ctx, "seven_day_expiry", "days"); err == nil {
+		if days, err := strconv.Atoi(daysStr); err == nil && days > 0 {
+			expiryPlugin.SetDays(days)
+			logger.Info("Loaded plugin expiry days", zap.Int("days", days))
+		}
+	} else {
+		logger.Warn("Failed to load plugin expiry days, using default", zap.Error(err))
+	}
+
 	if err := pluginManager.Register(expiryPlugin); err != nil {
 		logger.Warn("Failed to register expiry plugin", zap.Error(err))
 	}
-
-	// 初始化Service层
-	settingsService := service.NewSettingsService(settingsRepo, logger)
 
 	// 从数据库获取短链接长度配置
 	shortCodeLength, err := settingsService.GetShortCodeLength(context.Background())
@@ -82,7 +103,7 @@ func main() {
 	logger.Info("Short code length configured", zap.Int("length", shortCodeLength))
 
 	codeGenerator := service.NewBase62Generator(shortCodeLength)
-	linkService := service.NewLinkService(linkRepo, codeGenerator, hooks, logger)
+	linkService := service.NewLinkService(linkRepo, linkExpiryRepo, codeGenerator, hooks, logger)
 	authService := service.NewAuthService(userRepo, sessionRepo, cfg.Session.MaxAge, logger)
 	geoResolver := geolocation.NewSimpleGeoIPResolver()
 	analyticsService := service.NewAnalyticsService(analyticsRepo, geoResolver, logger)
@@ -93,6 +114,7 @@ func main() {
 	adminHandler := handler.NewAdminHandler(authService, linkService, logger)
 	apiHandler := handler.NewAPIHandler(linkService, analyticsService, logger)
 	settingsHandler := handler.NewSettingsHandler(settingsService, logger)
+	pluginHandler := handler.NewPluginHandler(pluginManager, settingsService, logger)
 
 	// 初始化Gin
 	if cfg.Log.Level == "production" {
@@ -130,6 +152,9 @@ func main() {
 			api.GET("/analytics/link", apiHandler.GetLinkAnalytics)
 			api.GET("/settings", settingsHandler.GetSettings)
 			api.PUT("/settings", settingsHandler.UpdateSettings)
+			api.GET("/plugins", pluginHandler.GetPlugins)
+			api.GET("/plugins/:name/config", pluginHandler.GetPluginConfig)
+			api.PUT("/plugins/:name/config", pluginHandler.UpdatePluginConfig)
 		}
 	}
 

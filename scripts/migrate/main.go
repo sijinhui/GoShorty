@@ -33,6 +33,9 @@ func main() {
 	migrationFiles := []string{
 		"internal/database/migrations/001_initial_schema.sql",
 		"internal/database/migrations/002_add_settings_table.sql",
+		"internal/database/migrations/003_add_plugin_settings.sql",
+		"internal/database/migrations/004_create_link_expiry_table.sql",
+		"internal/database/migrations/005_alter_links_table.sql",
 	}
 
 	ctx := context.Background()
