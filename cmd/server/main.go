@@ -104,6 +104,7 @@ func main() {
 
 	codeGenerator := service.NewBase62Generator(shortCodeLength)
 	linkService := service.NewLinkService(linkRepo, linkExpiryRepo, codeGenerator, hooks, logger)
+	linkExpiryService := service.NewLinkExpiryService(linkExpiryRepo, logger)
 	authService := service.NewAuthService(userRepo, sessionRepo, cfg.Session.MaxAge, logger)
 	geoResolver := geolocation.NewSimpleGeoIPResolver()
 	analyticsService := service.NewAnalyticsService(analyticsRepo, geoResolver, logger)
@@ -115,6 +116,7 @@ func main() {
 	apiHandler := handler.NewAPIHandler(linkService, analyticsService, logger)
 	settingsHandler := handler.NewSettingsHandler(settingsService, logger)
 	pluginHandler := handler.NewPluginHandler(pluginManager, settingsService, logger)
+	linkExpiryHandler := handler.NewLinkExpiryHandler(linkExpiryService, logger)
 
 	// 初始化Gin
 	if cfg.Log.Level == "production" {
@@ -155,6 +157,10 @@ func main() {
 			api.GET("/plugins", pluginHandler.GetPlugins)
 			api.GET("/plugins/:name/config", pluginHandler.GetPluginConfig)
 			api.PUT("/plugins/:name/config", pluginHandler.UpdatePluginConfig)
+			// 过期链接管理路由
+			api.GET("/link-expiry", linkExpiryHandler.HandleListExpired)
+			api.DELETE("/link-expiry/:shortCode", linkExpiryHandler.HandleDeleteExpired)
+			api.DELETE("/link-expiry/batch/all", linkExpiryHandler.HandleDeleteAllExpired)
 		}
 	}
 
@@ -179,7 +185,7 @@ func main() {
 		router.Static("/assets", filepath.Join(cfg.Frontend.StaticPath, "assets"))
 
 		// 管理后台前端路由（返回index.html，让React处理路由）
-		adminPages := []string{"/admin", "/admin/login", "/admin/dashboard", "/admin/links", "/admin/analytics", "/admin/settings"}
+		adminPages := []string{"/admin", "/admin/login", "/admin/dashboard", "/admin/links", "/admin/analytics", "/admin/settings", "/admin/link-expiry"}
 		for _, path := range adminPages {
 			router.GET(path, func(c *gin.Context) {
 				c.File(filepath.Join(cfg.Frontend.StaticPath, "index.html"))

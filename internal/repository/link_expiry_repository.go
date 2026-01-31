@@ -17,6 +17,7 @@ type LinkExpiryRepository interface {
 	Delete(ctx context.Context, shortCode string) error
 	DeleteExpired(ctx context.Context) (int64, error)
 	ListExpiring(ctx context.Context, limit int) ([]*domain.LinkExpiry, error)
+	ListExpired(ctx context.Context, limit, offset int) ([]*domain.LinkExpiry, error)
 }
 
 // PostgresLinkExpiryRepository 是 LinkExpiryRepository 的 PostgreSQL 实现
@@ -123,6 +124,40 @@ func (r *PostgresLinkExpiryRepository) ListExpiring(ctx context.Context, limit i
 	`
 
 	rows, err := r.pool.Query(ctx, query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var expiries []*domain.LinkExpiry
+	for rows.Next() {
+		expiry := &domain.LinkExpiry{}
+		err := rows.Scan(
+			&expiry.ID,
+			&expiry.ShortCode,
+			&expiry.LifecycleDays,
+			&expiry.CreatedAt,
+			&expiry.ExpiresAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		expiries = append(expiries, expiry)
+	}
+
+	return expiries, rows.Err()
+}
+
+// ListExpired 列出已过期的链接
+func (r *PostgresLinkExpiryRepository) ListExpired(ctx context.Context, limit, offset int) ([]*domain.LinkExpiry, error) {
+	query := `
+		SELECT id, short_code, lifecycle_days, created_at, expires_at
+		FROM link_expiry
+		ORDER BY expires_at DESC
+		LIMIT $1 OFFSET $2
+	`
+
+	rows, err := r.pool.Query(ctx, query, limit, offset)
 	if err != nil {
 		return nil, err
 	}

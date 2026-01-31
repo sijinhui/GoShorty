@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Links from './pages/Links';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import LinkExpiry from './pages/LinkExpiry';
 import AdminLayout from './components/layout/AdminLayout';
 import { useAuthStore } from './store/authStore';
 
@@ -81,6 +82,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Settings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/link-expiry"
+          element={
+            <ProtectedRoute>
+              <LinkExpiry />
             </ProtectedRoute>
           }
         />

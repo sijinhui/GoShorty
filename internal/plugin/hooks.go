@@ -102,9 +102,22 @@ func (h *Hooks) ExecuteAfterRedirect(ctx context.Context, link *domain.Link) err
 // CalculateExpiry 计算过期时间
 func (h *Hooks) CalculateExpiry(ctx context.Context, link *domain.Link) (*time.Time, error) {
 	expiryPlugin := h.manager.GetExpiryPlugin()
-	if expiryPlugin == nil || !expiryPlugin.Enabled() {
+	if expiryPlugin == nil {
+		h.logger.Warn("no expiry plugin registered")
 		return nil, nil
 	}
+
+	if !expiryPlugin.Enabled() {
+		h.logger.Info("expiry plugin is disabled",
+			zap.String("plugin", expiryPlugin.Name()),
+		)
+		return nil, nil
+	}
+
+	h.logger.Debug("calling expiry plugin",
+		zap.String("plugin", expiryPlugin.Name()),
+		zap.String("version", expiryPlugin.Version()),
+	)
 
 	expiry, err := expiryPlugin.CalculateExpiry(ctx, link)
 	if err != nil {
@@ -113,6 +126,13 @@ func (h *Hooks) CalculateExpiry(ctx context.Context, link *domain.Link) (*time.T
 			zap.Error(err),
 		)
 		return nil, err
+	}
+
+	if expiry != nil {
+		h.logger.Info("expiry plugin calculated expiry time",
+			zap.String("plugin", expiryPlugin.Name()),
+			zap.Time("expires_at", *expiry),
+		)
 	}
 
 	return expiry, nil

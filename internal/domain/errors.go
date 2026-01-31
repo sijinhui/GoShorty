@@ -6,6 +6,7 @@ var (
 	// Link errors
 	ErrLinkNotFound         = errors.New("link not found")
 	ErrLinkExpired          = errors.New("link expired")
+	ErrLinkNotExpired       = errors.New("link not expired")
 	ErrLinkInactive         = errors.New("link inactive")
 	ErrShortCodeExists      = errors.New("short code already exists")
 	ErrInvalidShortCode     = errors.New("invalid short code format")

@@ -7,6 +7,7 @@ export default function Sidebar() {
     { path: '/admin/dashboard', label: '📊 仪表盘', icon: '📊' },
     { path: '/admin/links', label: '🔗 链接管理', icon: '🔗' },
     { path: '/admin/analytics', label: '📈 统计分析', icon: '📈' },
+    { path: '/admin/link-expiry', label: '⏰ 过期管理', icon: '⏰' },
     { path: '/admin/settings', label: '⚙️ 系统设置', icon: '⚙️' },
   ];
 

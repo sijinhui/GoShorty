@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getLinks, deleteLink } from '../api/links';
+import { getExpiredLinks } from '../api/linkExpiry';
 import LinkTable from '../components/links/LinkTable';
 
 export default function Links() {
@@ -10,6 +11,12 @@ export default function Links() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['links', page],
     queryFn: () => getLinks(page, 20),
+  });
+
+  // 获取所有有过期设置的链接
+  const { data: expiryData } = useQuery({
+    queryKey: ['all-expiry-links'],
+    queryFn: () => getExpiredLinks(10000, 0), // 获取所有
   });
 
   const deleteMutation = useMutation({
@@ -26,6 +33,11 @@ export default function Links() {
       alert('删除失败');
     }
   };
+
+  // 创建短码集合，用于快速查找
+  const expiryShortCodes = new Set(
+    expiryData?.data?.expiries?.map(e => e.short_code) || []
+  );
 
   if (isLoading) {
     return (
@@ -64,6 +76,7 @@ export default function Links() {
           pagination={data.pagination}
           onPageChange={setPage}
           onDelete={handleDelete}
+          expiryShortCodes={expiryShortCodes}
         />
       )}
     </div>

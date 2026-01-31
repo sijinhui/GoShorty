@@ -150,8 +150,12 @@ func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*
 		expiryDays = req.ExpiryDays
 		expiry := time.Now().AddDate(0, 0, expiryDays)
 		expiresAt = &expiry
+		s.logger.Debug("using user-specified expiry",
+			zap.Int("days", expiryDays),
+		)
 	} else if s.hooks != nil {
 		// 使用插件计算过期时间
+		s.logger.Debug("attempting to calculate expiry using plugin system")
 		pluginExpiry, err := s.hooks.CalculateExpiry(ctx, link)
 		if err != nil {
 			s.logger.Warn("plugin expiry calculation failed", zap.Error(err))
@@ -163,7 +167,15 @@ func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*
 			if expiryDays < 1 {
 				expiryDays = 1
 			}
+			s.logger.Info("plugin expiry calculated",
+				zap.Int("days", expiryDays),
+				zap.Time("expires_at", *expiresAt),
+			)
+		} else {
+			s.logger.Warn("plugin returned nil expiry time")
 		}
+	} else {
+		s.logger.Warn("hooks system is nil, cannot calculate expiry")
 	}
 
 	// 执行创建前钩子
