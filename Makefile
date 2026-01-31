@@ -45,6 +45,10 @@ deps:
 migrate-up:
 	@echo "Running migrations..."
 	psql -h $(DB_HOST) -U $(DB_USER) -d $(DB_NAME) -f internal/database/migrations/001_initial_schema.sql
+	psql -h $(DB_HOST) -U $(DB_USER) -d $(DB_NAME) -f internal/database/migrations/002_add_settings_table.sql
+	psql -h $(DB_HOST) -U $(DB_USER) -d $(DB_NAME) -f internal/database/migrations/003_add_plugin_settings.sql
+	psql -h $(DB_HOST) -U $(DB_USER) -d $(DB_NAME) -f internal/database/migrations/004_create_link_expiry_table.sql
+	psql -h $(DB_HOST) -U $(DB_USER) -d $(DB_NAME) -f internal/database/migrations/005_alter_links_table.sql
 
 migrate-down:
 	@echo "Rolling back migrations..."
