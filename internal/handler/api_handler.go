@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"GoShorty/internal/domain"
@@ -30,6 +31,26 @@ func NewAPIHandler(
 		analyticsService: analyticsService,
 		logger:           logger,
 	}
+}
+
+// getClientIP 从请求中获取客户端IP地址
+func getClientIP(c *gin.Context) string {
+	// 尝试从 X-Forwarded-For 头获取
+	if xff := c.GetHeader("X-Forwarded-For"); xff != "" {
+		// X-Forwarded-For 可能包含多个IP，取第一个
+		ips := strings.Split(xff, ",")
+		if len(ips) > 0 {
+			return strings.TrimSpace(ips[0])
+		}
+	}
+
+	// 尝试从 X-Real-IP 头获取
+	if xri := c.GetHeader("X-Real-IP"); xri != "" {
+		return xri
+	}
+
+	// 使用 RemoteAddr
+	return c.ClientIP()
 }
 
 // GetDashboardStats 获取仪表盘统计数据
@@ -63,7 +84,7 @@ func (h *APIHandler) CreateLink(c *gin.Context) {
 	}
 
 	// 计算过期天数
-	expiryDays := 7 // 默认7天
+	expiryDays := 0 // 默认不设置，让插件系统处理
 	if req.ExpiresAt != "" {
 		t, err := time.Parse("2006-01-02T15:04", req.ExpiresAt)
 		if err == nil {
@@ -74,12 +95,16 @@ func (h *APIHandler) CreateLink(c *gin.Context) {
 		}
 	}
 
+	// 获取客户端IP
+	clientIP := getClientIP(c)
+
 	// 创建链接请求
 	createReq := &service.CreateLinkRequest{
 		URL:        req.OriginalURL,
 		CustomCode: req.ShortCode,
 		Title:      req.Title,
 		UserID:     1, // 简化版本，使用固定用户ID
+		CreatedIP:  clientIP,
 		ExpiryDays: expiryDays,
 	}
 
@@ -103,7 +128,6 @@ func (h *APIHandler) CreateLink(c *gin.Context) {
 		"short_url":    shortURL,
 		"title":        link.Title,
 		"created_at":   link.CreatedAt,
-		"expires_at":   link.ExpiresAt,
 	}
 
 	RespondSuccess(c, response, "短链接创建成功")
@@ -234,13 +258,17 @@ func (h *APIHandler) CreatePublicLink(c *gin.Context) {
 		return
 	}
 
+	// 获取客户端IP
+	clientIP := getClientIP(c)
+
 	// 创建链接请求（公开接口使用默认配置）
 	createReq := &service.CreateLinkRequest{
 		URL:        req.OriginalURL,
 		CustomCode: req.ShortCode,
 		Title:      "",
 		UserID:     1, // 公开链接使用默认用户ID
-		ExpiryDays: 7, // 默认7天过期
+		CreatedIP:  clientIP,
+		ExpiryDays: 0, // 默认不设置，让插件系统处理
 	}
 
 	// 创建链接
@@ -262,7 +290,6 @@ func (h *APIHandler) CreatePublicLink(c *gin.Context) {
 		"original_url": link.OriginalURL,
 		"short_url":    shortURL,
 		"created_at":   link.CreatedAt,
-		"expires_at":   link.ExpiresAt,
 	}
 
 	RespondSuccess(c, response, "短链接创建成功")
