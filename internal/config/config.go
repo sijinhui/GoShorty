@@ -118,8 +118,8 @@ func Load() (*Config, error) {
 func setDefaults() {
 	// 服务器默认值
 	viper.SetDefault("SERVER_HOST", "0.0.0.0")
-	viper.SetDefault("SERVER_PORT", 8080)
-	viper.SetDefault("BASE_URL", "http://localhost:8080")
+	viper.SetDefault("SERVER_PORT", 8800)
+	viper.SetDefault("BASE_URL", "http://localhost:8800")
 
 	// 数据库默认值
 	viper.SetDefault("DB_HOST", "localhost")
