@@ -61,6 +61,7 @@ func main() {
 	sessionRepo := repository.NewPostgresSessionRepository(db.Pool)
 	analyticsRepo := repository.NewPostgresAnalyticsRepository(db.Pool)
 	settingsRepo := repository.NewPostgresSettingsRepository(db.Pool)
+	rateLimitRepo := repository.NewPostgresRateLimitRepository(db.Pool)
 
 	// 初始化Service层（需要先创建settingsService以便加载插件配置）
 	settingsService := service.NewSettingsService(settingsRepo, logger)
@@ -108,10 +109,12 @@ func main() {
 	authService := service.NewAuthService(userRepo, sessionRepo, cfg.Session.MaxAge, logger)
 	geoResolver := geolocation.NewSimpleGeoIPResolver()
 	analyticsService := service.NewAnalyticsService(analyticsRepo, geoResolver, logger)
+	rateLimitService := service.NewRateLimitService(rateLimitRepo, settingsRepo, logger)
 
 	// 初始化Handler层
 	redirectHandler := handler.NewRedirectHandler(linkService, analyticsService, logger)
 	authMiddleware := handler.NewAuthMiddleware(authService, logger)
+	rateLimitMiddleware := handler.NewRateLimitMiddleware(rateLimitService, logger)
 	adminHandler := handler.NewAdminHandler(authService, linkService, logger)
 	apiHandler := handler.NewAPIHandler(linkService, analyticsService, logger)
 	settingsHandler := handler.NewSettingsHandler(settingsService, logger)
@@ -173,10 +176,10 @@ func main() {
 		c.JSON(200, gin.H{"status": "healthy"})
 	})
 
-	// 公开API端点（不需要认证）
+	// 公开API端点（不需要认证，但有速率限制）
 	publicAPI := router.Group("/api")
 	{
-		publicAPI.POST("/links", apiHandler.CreatePublicLink)
+		publicAPI.POST("/links", rateLimitMiddleware.RateLimit("/api/links"), apiHandler.CreatePublicLink)
 	}
 
 	// 配置前端静态文件服务

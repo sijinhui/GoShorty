@@ -16,6 +16,10 @@ type SettingsService interface {
 	UpdateShortCodeLength(ctx context.Context, length int) error
 	GetSystemSettings(ctx context.Context) (*domain.SystemSettings, error)
 
+	// 速率限制配置方法
+	GetRateLimitConfig(ctx context.Context) (*domain.RateLimitConfig, error)
+	UpdateRateLimitConfig(ctx context.Context, config *domain.RateLimitConfig) error
+
 	// 插件配置方法
 	GetPluginConfig(ctx context.Context, pluginName, key string) (string, error)
 	SetPluginConfig(ctx context.Context, pluginName, key, value string) error
@@ -88,8 +92,19 @@ func (s *settingsService) GetSystemSettings(ctx context.Context) (*domain.System
 		return nil, err
 	}
 
+	rateLimitConfig, err := s.GetRateLimitConfig(ctx)
+	if err != nil {
+		s.logger.Warn("failed to get rate limit config, using defaults", zap.Error(err))
+		rateLimitConfig = &domain.RateLimitConfig{
+			Enabled:       false,
+			RequestsLimit: 10,
+			WindowMinutes: 1,
+		}
+	}
+
 	return &domain.SystemSettings{
 		ShortCodeLength: length,
+		RateLimit:       *rateLimitConfig,
 	}, nil
 }
 
@@ -147,4 +162,71 @@ func (s *settingsService) GetPluginEnabled(ctx context.Context, pluginName strin
 func (s *settingsService) SetPluginEnabled(ctx context.Context, pluginName string, enabled bool) error {
 	value := strconv.FormatBool(enabled)
 	return s.SetPluginConfig(ctx, pluginName, "enabled", value)
+}
+
+// GetRateLimitConfig 获取速率限制配置
+func (s *settingsService) GetRateLimitConfig(ctx context.Context) (*domain.RateLimitConfig, error) {
+	config := &domain.RateLimitConfig{
+		Enabled:       false,
+		RequestsLimit: 10,
+		WindowMinutes: 1,
+	}
+
+	// 获取启用状态
+	enabledSetting, err := s.settingsRepo.GetByKey(ctx, "rate_limit.enabled")
+	if err == nil && enabledSetting.Value == "true" {
+		config.Enabled = true
+	}
+
+	// 获取请求限制
+	limitSetting, err := s.settingsRepo.GetByKey(ctx, "rate_limit.requests_limit")
+	if err == nil {
+		if limit, parseErr := strconv.Atoi(limitSetting.Value); parseErr == nil && limit > 0 {
+			config.RequestsLimit = limit
+		}
+	}
+
+	// 获取时间窗口
+	windowSetting, err := s.settingsRepo.GetByKey(ctx, "rate_limit.window_minutes")
+	if err == nil {
+		if window, parseErr := strconv.Atoi(windowSetting.Value); parseErr == nil && window > 0 {
+			config.WindowMinutes = window
+		}
+	}
+
+	return config, nil
+}
+
+// UpdateRateLimitConfig 更新速率限制配置
+func (s *settingsService) UpdateRateLimitConfig(ctx context.Context, config *domain.RateLimitConfig) error {
+	// 更新启用状态
+	enabledValue := "false"
+	if config.Enabled {
+		enabledValue = "true"
+	}
+	if err := s.settingsRepo.Update(ctx, "rate_limit.enabled", enabledValue); err != nil {
+		s.logger.Error("failed to update rate_limit.enabled", zap.Error(err))
+		return err
+	}
+
+	// 更新请求限制
+	if config.RequestsLimit > 0 {
+		limitValue := strconv.Itoa(config.RequestsLimit)
+		if err := s.settingsRepo.Update(ctx, "rate_limit.requests_limit", limitValue); err != nil {
+			s.logger.Error("failed to update rate_limit.requests_limit", zap.Error(err))
+			return err
+		}
+	}
+
+	// 更新时间窗口
+	if config.WindowMinutes > 0 {
+		windowValue := strconv.Itoa(config.WindowMinutes)
+		if err := s.settingsRepo.Update(ctx, "rate_limit.window_minutes", windowValue); err != nil {
+			s.logger.Error("failed to update rate_limit.window_minutes", zap.Error(err))
+			return err
+		}
+	}
+
+	s.logger.Info("rate limit config updated", zap.Bool("enabled", config.Enabled))
+	return nil
 }

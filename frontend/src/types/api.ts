@@ -101,11 +101,19 @@ export interface CreateLinkResponse {
 }
 
 // 系统设置类型
+export interface RateLimitConfig {
+  enabled: boolean;
+  requests_limit: number;
+  window_minutes: number;
+}
+
 export interface SystemSettings {
   short_code_length: number;
+  rate_limit: RateLimitConfig;
 }
 
 // 更新设置请求类型
 export interface UpdateSettingsRequest {
   short_code_length: number;
+  rate_limit?: RateLimitConfig;
 }

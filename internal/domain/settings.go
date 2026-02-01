@@ -14,5 +14,6 @@ type Settings struct {
 
 // SystemSettings 表示系统设置的结构化数据
 type SystemSettings struct {
-	ShortCodeLength int `json:"short_code_length"`
+	ShortCodeLength int             `json:"short_code_length"`
+	RateLimit       RateLimitConfig `json:"rate_limit"`
 }

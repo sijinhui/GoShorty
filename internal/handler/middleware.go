@@ -68,3 +68,47 @@ func (m *AuthMiddleware) handleAuthFailure(c *gin.Context) {
 		c.Abort()
 	}
 }
+
+// RateLimitMiddleware 速率限制中间件
+type RateLimitMiddleware struct {
+	rateLimitService service.RateLimitService
+	logger           *zap.Logger
+}
+
+// NewRateLimitMiddleware 创建一个新的速率限制中间件
+func NewRateLimitMiddleware(rateLimitService service.RateLimitService, logger *zap.Logger) *RateLimitMiddleware {
+	return &RateLimitMiddleware{
+		rateLimitService: rateLimitService,
+		logger:           logger,
+	}
+}
+
+// RateLimit 速率限制中间件处理函数
+func (m *RateLimitMiddleware) RateLimit(endpoint string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 获取客户端IP
+		clientIP := getClientIP(c)
+
+		// 检查速率限制
+		allowed, err := m.rateLimitService.CheckRateLimit(c.Request.Context(), clientIP, endpoint)
+		if err != nil {
+			m.logger.Error("rate limit check failed", zap.Error(err))
+			// 出错时允许请求继续
+			c.Next()
+			return
+		}
+
+		if !allowed {
+			// 超过速率限制
+			c.JSON(http.StatusTooManyRequests, APIError{
+				Success: false,
+				Error:   "请求过于频繁，请稍后再试",
+				Code:    "RATE_LIMIT_EXCEEDED",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}

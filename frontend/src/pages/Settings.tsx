@@ -9,6 +9,11 @@ export default function Settings() {
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [pluginSuccessMessage, setPluginSuccessMessage] = useState<string>('');
 
+  // 速率限制配置状态
+  const [rateLimitEnabled, setRateLimitEnabled] = useState<boolean>(false);
+  const [requestsLimit, setRequestsLimit] = useState<number>(10);
+  const [windowMinutes, setWindowMinutes] = useState<number>(1);
+
   // 插件配置状态
   const [pluginConfigs, setPluginConfigs] = useState<{[key: string]: {enabled: boolean, days?: number}}>({});
 
@@ -27,6 +32,13 @@ export default function Settings() {
   useEffect(() => {
     if (data?.data) {
       setShortCodeLength(data.data.short_code_length);
+
+      // 初始化速率限制配置
+      if (data.data.rate_limit) {
+        setRateLimitEnabled(data.data.rate_limit.enabled || false);
+        setRequestsLimit(data.data.rate_limit.requests_limit || 10);
+        setWindowMinutes(data.data.rate_limit.window_minutes || 1);
+      }
     }
   }, [data]);
 
@@ -72,6 +84,20 @@ export default function Settings() {
     }
 
     mutation.mutate({ short_code_length: shortCodeLength });
+  };
+
+  const handleRateLimitSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSuccessMessage('');
+
+    mutation.mutate({
+      short_code_length: shortCodeLength,
+      rate_limit: {
+        enabled: rateLimitEnabled,
+        requests_limit: requestsLimit,
+        window_minutes: windowMinutes,
+      },
+    });
   };
 
   const handlePluginUpdate = (pluginName: string) => {
@@ -225,6 +251,172 @@ export default function Settings() {
               borderRadius: '4px',
               border: 'none',
               cursor: mutation.isPending || shortCodeLength < 3 || shortCodeLength > 20 ? 'not-allowed' : 'pointer',
+              fontSize: '1rem',
+            }}
+          >
+            {mutation.isPending ? '保存中...' : '保存设置'}
+          </button>
+        </form>
+      </div>
+
+      {/* 速率限制设置 */}
+      <div style={{
+        background: 'white',
+        padding: '1.5rem',
+        borderRadius: '8px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        marginBottom: '1.5rem',
+      }}>
+        <h2 style={{
+          fontSize: '1.125rem',
+          fontWeight: '600',
+          marginBottom: '1rem',
+        }}>
+          速率限制设置
+        </h2>
+
+        <form onSubmit={handleRateLimitSubmit}>
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1rem',
+            }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontWeight: '500',
+                  marginBottom: '0.25rem',
+                }}>
+                  启用速率限制
+                </label>
+                <p style={{
+                  fontSize: '0.875rem',
+                  color: '#666',
+                }}>
+                  防止公开API被滥用，限制每个IP的请求频率
+                </p>
+              </div>
+              <label style={{
+                position: 'relative',
+                display: 'inline-block',
+                width: '44px',
+                height: '24px',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={rateLimitEnabled}
+                  onChange={(e) => setRateLimitEnabled(e.target.checked)}
+                  style={{
+                    opacity: 0,
+                    width: 0,
+                    height: 0,
+                  }}
+                />
+                <span style={{
+                  position: 'absolute',
+                  cursor: 'pointer',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: rateLimitEnabled ? '#3b82f6' : '#ccc',
+                  transition: '0.4s',
+                  borderRadius: '24px',
+                }}>
+                  <span style={{
+                    position: 'absolute',
+                    content: '',
+                    height: '18px',
+                    width: '18px',
+                    left: rateLimitEnabled ? '23px' : '3px',
+                    bottom: '3px',
+                    background: 'white',
+                    transition: '0.4s',
+                    borderRadius: '50%',
+                  }} />
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {rateLimitEnabled && (
+            <>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '500',
+                }}>
+                  请求次数限制
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={requestsLimit}
+                  onChange={(e) => setRequestsLimit(parseInt(e.target.value) || 10)}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '1rem',
+                  }}
+                />
+                <p style={{
+                  marginTop: '0.5rem',
+                  fontSize: '0.875rem',
+                  color: '#666',
+                }}>
+                  时间窗口内允许的最大请求次数（1-1000次）
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '500',
+                }}>
+                  时间窗口（分钟）
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={windowMinutes}
+                  onChange={(e) => setWindowMinutes(parseInt(e.target.value) || 1)}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '1rem',
+                  }}
+                />
+                <p style={{
+                  marginTop: '0.5rem',
+                  fontSize: '0.875rem',
+                  color: '#666',
+                }}>
+                  速率限制的时间窗口大小（1-60分钟）。当前设置：每{windowMinutes}分钟最多{requestsLimit}次请求
+                </p>
+              </div>
+            </>
+          )}
+
+          <button
+            type="submit"
+            disabled={mutation.isPending}
+            style={{
+              background: mutation.isPending ? '#ccc' : '#3b82f6',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '4px',
+              border: 'none',
+              cursor: mutation.isPending ? 'not-allowed' : 'pointer',
               fontSize: '1rem',
             }}
           >
