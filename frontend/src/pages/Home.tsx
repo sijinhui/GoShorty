@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { createPublicLink } from '../api/public';
 import { notification } from '../components/AntdStaticMethods';
@@ -14,7 +14,17 @@ export default function Home() {
     short_code: string;
   } | null>(null);
   const [error, setError] = useState('');
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const { theme, toggleTheme } = useThemeStore();
+
+  // 监听主题变化，在动画期间隐藏网格
+  useEffect(() => {
+    setIsTransitioning(true);
+    const timer = setTimeout(() => {
+      setIsTransitioning(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [theme]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -108,20 +118,23 @@ export default function Home() {
       >
         {theme === 'dark' ? '☀️' : '🌙'}
       </button>
-      {/* Atmospheric geometric pattern overlay - only in dark theme */}
-      {theme === 'dark' && (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundImage: `
+      {/* Atmospheric geometric pattern overlay */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        backgroundImage: theme === 'dark'
+          ? `
             linear-gradient(var(--gray-800) 1px, transparent 1px),
             linear-gradient(90deg, var(--gray-800) 1px, transparent 1px)
+          `
+          : `
+            linear-gradient(var(--gray-600) 1px, transparent 1px),
+            linear-gradient(90deg, var(--gray-600) 1px, transparent 1px)
           `,
-          backgroundSize: '50px 50px',
-          opacity: 0.3,
-          pointerEvents: 'none',
-        }} />
-      )}
+        backgroundSize: '50px 50px',
+        opacity: theme === 'dark' ? 0.3 : 0.12,
+        pointerEvents: 'none',
+      }} />
 
       <div style={{
         width: '100%',
