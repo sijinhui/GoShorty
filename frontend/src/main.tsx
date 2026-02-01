@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './index.css'
 import App from './App.tsx'
+import { initTheme } from './store/themeStore'
+
+// 初始化主题
+initTheme()
 
 const queryClient = new QueryClient({
   defaultOptions: {
