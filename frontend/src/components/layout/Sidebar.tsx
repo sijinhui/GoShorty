@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useThemeStore } from '../../store/themeStore';
 
 interface SidebarProps {
   onLogout: () => void;
@@ -6,6 +7,7 @@ interface SidebarProps {
 
 export default function Sidebar({ onLogout }: SidebarProps) {
   const location = useLocation();
+  const { theme, toggleTheme } = useThemeStore();
 
   const menuItems = [
     { path: '/admin/dashboard', label: '📊 仪表盘', icon: '📊' },
@@ -18,8 +20,9 @@ export default function Sidebar({ onLogout }: SidebarProps) {
   return (
     <div style={{
       width: '250px',
-      background: 'linear-gradient(180deg, #667eea 0%, #764ba2 100%)',
-      color: 'white',
+      background: 'var(--bg-elevated)',
+      borderRight: '1px solid var(--border-subtle)',
+      color: 'var(--text-primary)',
       height: '100vh',
       position: 'fixed',
       left: 0,
@@ -27,28 +30,34 @@ export default function Sidebar({ onLogout }: SidebarProps) {
       padding: '1.5rem 0',
       display: 'flex',
       flexDirection: 'column',
+      boxShadow: 'var(--shadow-lg)',
     }}>
       <div style={{
         padding: '0 1.5rem',
         marginBottom: '2rem',
+        animation: 'fadeIn 0.5s ease-out',
       }}>
         <h1 style={{
           fontSize: '1.5rem',
-          fontWeight: 'bold',
+          fontWeight: '800',
+          fontFamily: 'var(--font-heading)',
+          letterSpacing: '-0.01em',
+          color: 'var(--text-primary)',
         }}>
           GoShorty
         </h1>
         <p style={{
           fontSize: '0.875rem',
-          opacity: 0.8,
+          color: 'var(--text-secondary)',
           marginTop: '0.25rem',
+          fontFamily: 'var(--font-body)',
         }}>
           短链接管理系统
         </p>
       </div>
 
       <nav style={{ flex: 1 }}>
-        {menuItems.map((item) => {
+        {menuItems.map((item, index) => {
           const isActive = location.pathname === item.path;
           return (
             <Link
@@ -56,12 +65,28 @@ export default function Sidebar({ onLogout }: SidebarProps) {
               to={item.path}
               style={{
                 display: 'block',
-                padding: '0.75rem 1.5rem',
-                color: 'white',
+                padding: '0.875rem 1.5rem',
+                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                 textDecoration: 'none',
-                background: isActive ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
-                borderLeft: isActive ? '4px solid white' : '4px solid transparent',
-                transition: 'all 0.2s',
+                background: isActive ? 'var(--bg-hover)' : 'transparent',
+                borderLeft: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
+                transition: 'all var(--transition-base)',
+                fontFamily: 'var(--font-body)',
+                fontWeight: isActive ? '600' : '500',
+                fontSize: '0.9375rem',
+                animation: `slideIn 0.3s ease-out ${index * 0.05}s backwards`,
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = 'var(--bg-hover)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }
               }}
             >
               {item.label}
@@ -74,26 +99,69 @@ export default function Sidebar({ onLogout }: SidebarProps) {
         padding: '0 1.5rem',
         marginTop: 'auto',
         marginBottom: '2rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.75rem',
       }}>
+        {/* 主题切换按钮 */}
+        <button
+          onClick={toggleTheme}
+          style={{
+            width: '100%',
+            padding: '0.875rem 1rem',
+            background: 'var(--bg-hover)',
+            color: 'var(--text-secondary)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            fontFamily: 'var(--font-body)',
+            transition: 'all var(--transition-base)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--bg-secondary)';
+            e.currentTarget.style.color = 'var(--text-primary)';
+            e.currentTarget.style.borderColor = 'var(--border-medium)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'var(--bg-hover)';
+            e.currentTarget.style.color = 'var(--text-secondary)';
+            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+          }}
+        >
+          {theme === 'dark' ? '☀️' : '🌙'} {theme === 'dark' ? '亮色模式' : '暗色模式'}
+        </button>
+
+        {/* 退出登录按钮 */}
         <button
           onClick={onLogout}
           style={{
             width: '100%',
-            padding: '0.75rem 1rem',
-            background: 'rgba(255, 255, 255, 0.2)',
-            color: 'white',
-            // border: '1px solid rgba(255, 255, 255, 0.3)',
-            borderRadius: '4px',
+            padding: '0.875rem 1rem',
+            background: 'var(--bg-hover)',
+            color: 'var(--text-secondary)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '8px',
             cursor: 'pointer',
             fontSize: '0.875rem',
-            fontWeight: '500',
-            transition: 'all 0.2s',
+            fontWeight: '600',
+            fontFamily: 'var(--font-body)',
+            transition: 'all var(--transition-base)',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+            e.currentTarget.style.background = 'var(--bg-secondary)';
+            e.currentTarget.style.color = 'var(--text-primary)';
+            e.currentTarget.style.borderColor = 'var(--border-medium)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            e.currentTarget.style.background = 'var(--bg-hover)';
+            e.currentTarget.style.color = 'var(--text-secondary)';
+            e.currentTarget.style.borderColor = 'var(--border-subtle)';
           }}
         >
           🚪 退出登录

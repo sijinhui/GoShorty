@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { createPublicLink } from '../api/public';
 import { notification } from '../components/AntdStaticMethods';
+import { useThemeStore } from '../store/themeStore';
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -13,6 +14,7 @@ export default function Home() {
     short_code: string;
   } | null>(null);
   const [error, setError] = useState('');
+  const { theme, toggleTheme } = useThemeStore();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -55,31 +57,110 @@ export default function Home() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: theme === 'dark'
+        ? `
+          radial-gradient(circle at 20% 30%, rgba(122, 138, 153, 0.15) 0%, transparent 50%),
+          radial-gradient(circle at 80% 70%, rgba(122, 138, 153, 0.1) 0%, transparent 50%),
+          linear-gradient(135deg, var(--gray-900) 0%, var(--gray-850) 50%, var(--gray-900) 100%)
+        `
+        : 'var(--gray-300)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '1rem',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
+      {/* Theme toggle button */}
+      <button
+        onClick={toggleTheme}
+        style={{
+          position: 'fixed',
+          top: '1.5rem',
+          right: '1.5rem',
+          width: '48px',
+          height: '48px',
+          background: 'var(--bg-elevated)',
+          color: 'var(--text-secondary)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: '12px',
+          cursor: 'pointer',
+          fontSize: '1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all var(--transition-base)',
+          boxShadow: 'var(--shadow-lg)',
+          zIndex: 10,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'var(--bg-hover)';
+          e.currentTarget.style.color = 'var(--text-primary)';
+          e.currentTarget.style.borderColor = 'var(--border-medium)';
+          e.currentTarget.style.transform = 'scale(1.05)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'var(--bg-elevated)';
+          e.currentTarget.style.color = 'var(--text-secondary)';
+          e.currentTarget.style.borderColor = 'var(--border-subtle)';
+          e.currentTarget.style.transform = 'scale(1)';
+        }}
+      >
+        {theme === 'dark' ? '☀️' : '🌙'}
+      </button>
+      {/* Atmospheric geometric pattern overlay - only in dark theme */}
+      {theme === 'dark' && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: `
+            linear-gradient(var(--gray-800) 1px, transparent 1px),
+            linear-gradient(90deg, var(--gray-800) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px',
+          opacity: 0.3,
+          pointerEvents: 'none',
+        }} />
+      )}
+
       <div style={{
         width: '100%',
         maxWidth: '600px',
-        background: 'white',
-        borderRadius: '12px',
+        background: 'var(--bg-elevated)',
+        borderRadius: '16px',
         padding: 'clamp(1.5rem, 5vw, 2.5rem)',
-        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+        boxShadow: 'var(--shadow-xl)',
+        border: '1px solid var(--border-subtle)',
+        position: 'relative',
+        zIndex: 1,
+        animation: 'fadeIn 0.6s ease-out',
       }}>
         {/* 标题 */}
-        <h1 style={{
-          fontSize: 'clamp(1.25rem, 4vw, 1.75rem)',
-          fontWeight: 'bold',
+        <div style={{
           textAlign: 'center',
-          marginBottom: '2rem',
-          color: '#1f2937',
-          lineHeight: '1.4',
+          marginBottom: '2.5rem',
+          animation: 'fadeIn 0.8s ease-out 0.2s backwards',
         }}>
-          通过一个短链接快速访问您的网站
-        </h1>
+          <h1 style={{
+            fontSize: 'clamp(1.75rem, 5vw, 2.5rem)',
+            fontWeight: '800',
+            fontFamily: 'var(--font-heading)',
+            marginBottom: '0.75rem',
+            color: 'var(--text-primary)',
+            lineHeight: '1.2',
+            letterSpacing: '-0.02em',
+          }}>
+            GoShorty
+          </h1>
+          <p style={{
+            fontSize: 'clamp(0.95rem, 2vw, 1.1rem)',
+            color: 'var(--text-secondary)',
+            fontWeight: '500',
+            letterSpacing: '0.01em',
+          }}>
+            通过一个短链接快速访问您的网站
+          </p>
+        </div>
 
         {/* 主表单 */}
         <form onSubmit={handleSubmit}>
@@ -98,37 +179,56 @@ export default function Home() {
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '0.875rem',
+                padding: '1rem',
                 fontSize: '1rem',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
+                fontFamily: 'var(--font-body)',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '10px',
                 outline: 'none',
-                transition: 'border-color 0.2s',
+                transition: 'all var(--transition-base)',
                 boxSizing: 'border-box',
+                color: 'var(--text-primary)',
               }}
-              onFocus={(e) => e.currentTarget.style.borderColor = '#667eea'}
-              onBlur={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                e.currentTarget.style.background = 'var(--bg-primary)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                e.currentTarget.style.background = 'var(--bg-secondary)';
+              }}
             />
             <button
               type="submit"
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '0.875rem',
+                padding: '1rem',
                 fontSize: '1rem',
                 fontWeight: '600',
-                color: 'white',
-                background: loading ? '#9ca3af' : '#667eea',
+                fontFamily: 'var(--font-body)',
+                color: loading ? 'var(--text-tertiary)' : '#ffffff',
+                background: loading ? 'var(--gray-700)' : 'var(--accent-primary)',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '10px',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'background 0.2s',
+                transition: 'all var(--transition-base)',
+                boxShadow: loading ? 'none' : 'var(--shadow-md)',
               }}
               onMouseEnter={(e) => {
-                if (!loading) e.currentTarget.style.background = '#5568d3';
+                if (!loading) {
+                  e.currentTarget.style.background = 'var(--accent-hover)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+                }
               }}
               onMouseLeave={(e) => {
-                if (!loading) e.currentTarget.style.background = '#667eea';
+                if (!loading) {
+                  e.currentTarget.style.background = 'var(--accent-primary)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+                }
               }}
             >
               {loading ? '处理中...' : '缩短'}
@@ -147,11 +247,15 @@ export default function Home() {
                 padding: '0.5rem',
                 background: 'transparent',
                 border: 'none',
-                color: '#667eea',
+                color: 'var(--accent-primary)',
                 cursor: 'pointer',
                 fontSize: '0.875rem',
-                fontWeight: '500',
+                fontWeight: '600',
+                fontFamily: 'var(--font-body)',
+                transition: 'color var(--transition-fast)',
               }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-hover)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--accent-primary)'}
             >
               <svg
                 width="16"
@@ -177,9 +281,11 @@ export default function Home() {
               flexDirection: 'column',
               gap: '0.5rem',
               padding: '1rem',
-              background: '#f9fafb',
-              borderRadius: '8px',
+              background: 'var(--bg-secondary)',
+              borderRadius: '10px',
               marginBottom: '1rem',
+              border: '1px solid var(--border-subtle)',
+              animation: 'fadeIn 0.3s ease-out',
             }}>
               <div style={{
                 display: 'flex',
@@ -189,8 +295,9 @@ export default function Home() {
               }}>
                 <span style={{
                   fontSize: '0.875rem',
-                  color: '#6b7280',
-                  fontWeight: '500',
+                  color: 'var(--text-secondary)',
+                  fontWeight: '600',
+                  fontFamily: 'var(--font-body)',
                   whiteSpace: 'nowrap',
                 }}>
                   {window.location.host}/
@@ -205,12 +312,15 @@ export default function Home() {
                   style={{
                     flex: '1 1 auto',
                     minWidth: '150px',
-                    padding: '0.5rem',
+                    padding: '0.625rem',
                     fontSize: '0.875rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '4px',
+                    fontFamily: 'var(--font-body)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '6px',
                     outline: 'none',
-                    background: 'white',
+                    background: 'var(--bg-primary)',
+                    color: 'var(--text-primary)',
+                    transition: 'border-color var(--transition-fast)',
                   }}
                 />
               </div>
@@ -221,12 +331,15 @@ export default function Home() {
         {/* 错误提示 */}
         {error && (
           <div style={{
-            padding: '0.875rem',
-            background: '#fee2e2',
-            color: '#dc2626',
-            borderRadius: '8px',
+            padding: '1rem',
+            background: 'rgba(184, 122, 122, 0.15)',
+            color: 'var(--error)',
+            borderRadius: '10px',
             marginTop: '1rem',
             fontSize: '0.875rem',
+            fontFamily: 'var(--font-body)',
+            border: '1px solid var(--error)',
+            animation: 'fadeIn 0.3s ease-out',
           }}>
             {error}
           </div>
@@ -237,15 +350,17 @@ export default function Home() {
           <div style={{
             marginTop: '1.5rem',
             padding: '1.25rem',
-            background: '#f0fdf4',
-            border: '2px solid #86efac',
-            borderRadius: '8px',
+            background: 'rgba(107, 142, 127, 0.15)',
+            border: '1px solid var(--success)',
+            borderRadius: '10px',
+            animation: 'fadeIn 0.4s ease-out',
           }}>
             <div style={{
               fontSize: '0.875rem',
-              color: '#166534',
+              color: 'var(--success)',
               marginBottom: '0.75rem',
               fontWeight: '600',
+              fontFamily: 'var(--font-body)',
             }}>
               ✓ 短链接创建成功！
             </div>
@@ -259,18 +374,28 @@ export default function Home() {
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  padding: '0.75rem',
-                  background: 'white',
-                  border: '1px solid #86efac',
-                  borderRadius: '6px',
-                  color: '#667eea',
+                  padding: '0.875rem',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '8px',
+                  color: 'var(--accent-primary)',
                   textDecoration: 'none',
                   fontSize: '0.875rem',
-                  fontWeight: '500',
+                  fontWeight: '600',
+                  fontFamily: 'var(--font-body)',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   textAlign: 'center',
+                  transition: 'all var(--transition-fast)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                  e.currentTarget.style.background = 'var(--bg-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.background = 'var(--bg-secondary)';
                 }}
               >
                 {result.short_url}
@@ -288,14 +413,25 @@ export default function Home() {
                   });
                 }}
                 style={{
-                  padding: '0.75rem',
-                  background: '#667eea',
-                  color: 'white',
+                  padding: '0.875rem',
+                  background: 'var(--accent-primary)',
+                  color: '#ffffff',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '0.875rem',
                   fontWeight: '600',
+                  fontFamily: 'var(--font-body)',
+                  transition: 'all var(--transition-base)',
+                  boxShadow: 'var(--shadow-md)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--accent-hover)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'var(--accent-primary)';
+                  e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
                 复制链接
