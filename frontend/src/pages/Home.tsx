@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { createPublicLink } from '../api/public';
+import { notification } from '../components/AntdStaticMethods';
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -32,6 +33,15 @@ export default function Home() {
         });
         setUrl('');
         setCustomCode('');
+
+        // 显示过期提示
+        notification.info({
+          title: '链接创建成功',
+          description: '该链接将在七天后过期',
+          placement: 'topRight',
+          duration: 4.5,
+          showProgress: true,
+        });
       } else {
         setError('创建短链接失败');
       }
@@ -269,7 +279,13 @@ export default function Home() {
                 type="button"
                 onClick={() => {
                   navigator.clipboard.writeText(result.short_url);
-                  alert('已复制到剪贴板！');
+                  notification.success({
+                    title: '复制成功',
+                    description: '短链接已复制到剪贴板',
+                    placement: 'topRight',
+                    duration: 3,
+                    showProgress: true,
+                  });
                 }}
                 style={{
                   padding: '0.75rem',

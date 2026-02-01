@@ -133,9 +133,6 @@ export default function LinkExpiryPage() {
                 <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
                   <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600' }}>短码</th>
                   <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600' }}>状态</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600' }}>生命周期</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600' }}>创建时间</th>
-                  <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600' }}>过期时间</th>
                   <th style={{ padding: '0.75rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: '600' }}>操作</th>
                 </tr>
               </thead>
@@ -179,15 +176,6 @@ export default function LinkExpiryPage() {
                                 : '即将过期'}
                           </span>
                         )}
-                      </td>
-                      <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>
-                        {expiry.lifecycle_days} 天
-                      </td>
-                      <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>
-                        {new Date(expiry.created_at).toLocaleString('zh-CN')}
-                      </td>
-                      <td style={{ padding: '0.75rem', fontSize: '0.875rem', color: isExpired ? '#dc2626' : '#6b7280' }}>
-                        {new Date(expiry.expires_at).toLocaleString('zh-CN')}
                       </td>
                       <td style={{ padding: '0.75rem', textAlign: 'right' }}>
                         <button

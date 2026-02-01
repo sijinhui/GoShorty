@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { App as AntdApp } from 'antd';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -9,6 +10,7 @@ import Settings from './pages/Settings';
 import LinkExpiry from './pages/LinkExpiry';
 import AdminLayout from './components/layout/AdminLayout';
 import { useAuthStore } from './store/authStore';
+import AntdStaticMethods from './components/AntdStaticMethods';
 
 // 受保护的路由组件
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -43,58 +45,61 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* 公开首页 */}
-        <Route path="/" element={<Home />} />
+    <AntdApp>
+      <AntdStaticMethods />
+      <BrowserRouter>
+        <Routes>
+          {/* 公开首页 */}
+          <Route path="/" element={<Home />} />
 
-        {/* 管理后台登录页面 */}
-        <Route path="/admin/login" element={<Login />} />
+          {/* 管理后台登录页面 */}
+          <Route path="/admin/login" element={<Login />} />
 
-        {/* 管理后台路由 */}
-        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/links"
-          element={
-            <ProtectedRoute>
-              <Links />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/analytics"
-          element={
-            <ProtectedRoute>
-              <Analytics />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/settings"
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/link-expiry"
-          element={
-            <ProtectedRoute>
-              <LinkExpiry />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+          {/* 管理后台路由 */}
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/links"
+            element={
+              <ProtectedRoute>
+                <Links />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/analytics"
+            element={
+              <ProtectedRoute>
+                <Analytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/link-expiry"
+            element={
+              <ProtectedRoute>
+                <LinkExpiry />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </AntdApp>
   );
 }
 
