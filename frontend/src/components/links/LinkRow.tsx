@@ -74,6 +74,9 @@ export default function LinkRow({ link, onDelete, hasExpiry }: LinkRowProps) {
           </div>
         )}
       </td>
+      <td style={{ padding: '0.35rem', fontSize: '0.875rem', color: '#6b7280', fontFamily: 'monospace' }}>
+        {link.created_ip || '-'}
+      </td>
       <td style={{ padding: '0.35rem', textAlign: 'center', fontSize: '0.875rem' }}>
         {link.click_count}
       </td>

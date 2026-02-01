@@ -36,6 +36,7 @@ export default function LinkTable({ links, pagination, onPageChange, onDelete, e
           <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
             <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600' }}>短码</th>
             <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600' }}>原始链接</th>
+            <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600' }}>IP</th>
             <th style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.875rem', fontWeight: '600' }}>点击数</th>
             <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600' }}>状态</th>
             <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600' }}>创建时间</th>
