@@ -1,6 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 
-export default function Sidebar() {
+interface SidebarProps {
+  onLogout: () => void;
+}
+
+export default function Sidebar({ onLogout }: SidebarProps) {
   const location = useLocation();
 
   const menuItems = [
@@ -21,6 +25,8 @@ export default function Sidebar() {
       left: 0,
       top: 0,
       padding: '1.5rem 0',
+      display: 'flex',
+      flexDirection: 'column',
     }}>
       <div style={{
         padding: '0 1.5rem',
@@ -41,7 +47,7 @@ export default function Sidebar() {
         </p>
       </div>
 
-      <nav>
+      <nav style={{ flex: 1 }}>
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -63,6 +69,36 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      <div style={{
+        padding: '0 1.5rem',
+        marginTop: 'auto',
+        marginBottom: '2rem',
+      }}>
+        <button
+          onClick={onLogout}
+          style={{
+            width: '100%',
+            padding: '0.75rem 1rem',
+            background: 'rgba(255, 255, 255, 0.2)',
+            color: 'white',
+            // border: '1px solid rgba(255, 255, 255, 0.3)',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+          }}
+        >
+          🚪 退出登录
+        </button>
+      </div>
     </div>
   );
 }
