@@ -105,7 +105,7 @@ export default function Sidebar({ onLogout }: SidebarProps) {
       }}>
         {/* 主题切换按钮 */}
         <button
-          onClick={toggleTheme}
+          onClick={(e) => toggleTheme(e)}
           style={{
             width: '100%',
             padding: '0.875rem 1rem',

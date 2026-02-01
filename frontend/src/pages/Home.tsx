@@ -73,7 +73,7 @@ export default function Home() {
     }}>
       {/* Theme toggle button */}
       <button
-        onClick={toggleTheme}
+        onClick={(e) => toggleTheme(e)}
         style={{
           position: 'fixed',
           top: '1.5rem',
