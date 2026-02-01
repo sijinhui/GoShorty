@@ -21,6 +21,7 @@
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
+  backface-visibility: hidden;
 }
 
 ::view-transition-old(root) {

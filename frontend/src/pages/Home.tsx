@@ -59,9 +59,9 @@ export default function Home() {
       minHeight: '100vh',
       background: theme === 'dark'
         ? `
-          radial-gradient(circle at 20% 30%, rgba(122, 138, 153, 0.15) 0%, transparent 50%),
-          radial-gradient(circle at 80% 70%, rgba(122, 138, 153, 0.1) 0%, transparent 50%),
-          linear-gradient(135deg, var(--gray-900) 0%, var(--gray-850) 50%, var(--gray-900) 100%)
+          radial-gradient(circle at 20% 30%, rgba(138, 138, 138, 0.15) 0%, transparent 50%),
+          radial-gradient(circle at 80% 70%, rgba(138, 138, 138, 0.1) 0%, transparent 50%),
+          linear-gradient(135deg, #121212 0%, #1a1a1a 50%, #121212 100%)
         `
         : 'var(--gray-300)',
       display: 'flex',
