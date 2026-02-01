@@ -116,8 +116,27 @@ export default function Settings() {
 
   if (isLoading || pluginsLoading) {
     return (
-      <div style={{ textAlign: 'center', padding: '2rem' }}>
-        <div>加载中...</div>
+      <div style={{
+        textAlign: 'center',
+        padding: '3rem',
+        color: 'var(--text-secondary)',
+        fontFamily: 'var(--font-body)',
+      }}>
+        <div style={{
+          display: 'inline-block',
+          width: '40px',
+          height: '40px',
+          border: '3px solid var(--border-subtle)',
+          borderTopColor: 'var(--accent-primary)',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <p style={{ marginTop: '1rem', fontSize: '0.875rem' }}>加载中...</p>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
@@ -125,10 +144,12 @@ export default function Settings() {
   if (error || pluginsError) {
     return (
       <div style={{
-        background: '#fee',
-        color: '#c33',
+        background: 'rgba(184, 122, 122, 0.15)',
+        color: 'var(--error)',
         padding: '1rem',
-        borderRadius: '4px',
+        borderRadius: '10px',
+        border: '1px solid var(--error)',
+        fontFamily: 'var(--font-body)',
       }}>
         加载失败：{(error as any)?.error || (pluginsError as any)?.error || '未知错误'}
       </div>
@@ -138,20 +159,27 @@ export default function Settings() {
   return (
     <div>
       <h1 style={{
-        fontSize: '1.5rem',
-        fontWeight: 'bold',
-        marginBottom: '1.5rem',
+        fontSize: '1.75rem',
+        fontWeight: '800',
+        fontFamily: 'var(--font-heading)',
+        marginBottom: '2rem',
+        color: 'var(--text-primary)',
+        letterSpacing: '-0.01em',
+        animation: 'fadeIn 0.5s ease-out',
       }}>
         系统设置
       </h1>
 
       {successMessage && (
         <div style={{
-          background: '#d4edda',
-          color: '#155724',
+          background: 'rgba(107, 142, 127, 0.15)',
+          color: 'var(--success)',
           padding: '1rem',
-          borderRadius: '4px',
-          marginBottom: '1rem',
+          borderRadius: '10px',
+          marginBottom: '1.5rem',
+          border: '1px solid var(--success)',
+          fontFamily: 'var(--font-body)',
+          animation: 'fadeIn 0.3s ease-out',
         }}>
           {successMessage}
         </div>
@@ -159,11 +187,14 @@ export default function Settings() {
 
       {pluginSuccessMessage && (
         <div style={{
-          background: '#d4edda',
-          color: '#155724',
+          background: 'rgba(107, 142, 127, 0.15)',
+          color: 'var(--success)',
           padding: '1rem',
-          borderRadius: '4px',
-          marginBottom: '1rem',
+          borderRadius: '10px',
+          marginBottom: '1.5rem',
+          border: '1px solid var(--success)',
+          fontFamily: 'var(--font-body)',
+          animation: 'fadeIn 0.3s ease-out',
         }}>
           {pluginSuccessMessage}
         </div>
@@ -171,11 +202,14 @@ export default function Settings() {
 
       {mutation.isError && (
         <div style={{
-          background: '#fee',
-          color: '#c33',
+          background: 'rgba(184, 122, 122, 0.15)',
+          color: 'var(--error)',
           padding: '1rem',
-          borderRadius: '4px',
-          marginBottom: '1rem',
+          borderRadius: '10px',
+          marginBottom: '1.5rem',
+          border: '1px solid var(--error)',
+          fontFamily: 'var(--font-body)',
+          animation: 'fadeIn 0.3s ease-out',
         }}>
           更新失败：{(mutation.error as any)?.error || '未知错误'}
         </div>
@@ -183,11 +217,14 @@ export default function Settings() {
 
       {pluginMutation.isError && (
         <div style={{
-          background: '#fee',
-          color: '#c33',
+          background: 'rgba(184, 122, 122, 0.15)',
+          color: 'var(--error)',
           padding: '1rem',
-          borderRadius: '4px',
-          marginBottom: '1rem',
+          borderRadius: '10px',
+          marginBottom: '1.5rem',
+          border: '1px solid var(--error)',
+          fontFamily: 'var(--font-body)',
+          animation: 'fadeIn 0.3s ease-out',
         }}>
           插件配置更新失败：{(pluginMutation.error as any)?.error || '未知错误'}
         </div>
@@ -195,26 +232,34 @@ export default function Settings() {
 
       {/* 短链接设置 */}
       <div style={{
-        background: 'white',
-        padding: '1.5rem',
-        borderRadius: '8px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        marginBottom: '1.5rem',
+        background: 'var(--bg-elevated)',
+        padding: '1.75rem',
+        borderRadius: '12px',
+        boxShadow: 'var(--shadow-md)',
+        border: '1px solid var(--border-subtle)',
+        marginBottom: '2rem',
+        animation: 'fadeIn 0.5s ease-out 0.1s backwards',
       }}>
         <h2 style={{
-          fontSize: '1.125rem',
-          fontWeight: '600',
-          marginBottom: '1rem',
+          fontSize: '1.25rem',
+          fontWeight: '800',
+          fontFamily: 'var(--font-heading)',
+          marginBottom: '1.25rem',
+          color: 'var(--text-primary)',
+          letterSpacing: '-0.01em',
         }}>
           短链接设置
         </h2>
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1rem' }}>
+          <div style={{ marginBottom: '1.25rem' }}>
             <label style={{
               display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: '500',
+              marginBottom: '0.625rem',
+              fontWeight: '600',
+              fontFamily: 'var(--font-body)',
+              color: 'var(--text-secondary)',
+              fontSize: '0.875rem',
             }}>
               短链接长度
             </label>
@@ -226,16 +271,22 @@ export default function Settings() {
               onChange={(e) => setShortCodeLength(parseInt(e.target.value) || 3)}
               style={{
                 width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
+                padding: '0.75rem',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '8px',
                 fontSize: '1rem',
+                fontFamily: 'var(--font-body)',
+                background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+                outline: 'none',
+                transition: 'all var(--transition-base)',
               }}
             />
             <p style={{
-              marginTop: '0.5rem',
+              marginTop: '0.625rem',
               fontSize: '0.875rem',
-              color: '#666',
+              color: 'var(--text-tertiary)',
+              fontFamily: 'var(--font-body)',
             }}>
               设置短链接代码的长度（3-20位）。当前设置：{shortCodeLength}位
             </p>
@@ -245,13 +296,17 @@ export default function Settings() {
             type="submit"
             disabled={mutation.isPending || shortCodeLength < 3 || shortCodeLength > 20}
             style={{
-              background: mutation.isPending || shortCodeLength < 3 || shortCodeLength > 20 ? '#ccc' : '#3b82f6',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '4px',
-              border: 'none',
+              background: mutation.isPending || shortCodeLength < 3 || shortCodeLength > 20 ? 'var(--gray-700)' : 'var(--accent-primary)',
+              color: mutation.isPending || shortCodeLength < 3 || shortCodeLength > 20 ? 'var(--text-tertiary)' : '#ffffff',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              border: '1px solid',
+              borderColor: mutation.isPending || shortCodeLength < 3 || shortCodeLength > 20 ? 'var(--border-subtle)' : 'var(--accent-primary)',
               cursor: mutation.isPending || shortCodeLength < 3 || shortCodeLength > 20 ? 'not-allowed' : 'pointer',
               fontSize: '1rem',
+              fontWeight: '600',
+              fontFamily: 'var(--font-body)',
+              transition: 'all var(--transition-base)',
             }}
           >
             {mutation.isPending ? '保存中...' : '保存设置'}
@@ -261,16 +316,21 @@ export default function Settings() {
 
       {/* 速率限制设置 */}
       <div style={{
-        background: 'white',
-        padding: '1.5rem',
-        borderRadius: '8px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        marginBottom: '1.5rem',
+        background: 'var(--bg-elevated)',
+        padding: '1.75rem',
+        borderRadius: '12px',
+        boxShadow: 'var(--shadow-md)',
+        border: '1px solid var(--border-subtle)',
+        marginBottom: '2rem',
+        animation: 'fadeIn 0.5s ease-out 0.2s backwards',
       }}>
         <h2 style={{
-          fontSize: '1.125rem',
-          fontWeight: '600',
-          marginBottom: '1rem',
+          fontSize: '1.25rem',
+          fontWeight: '800',
+          fontFamily: 'var(--font-heading)',
+          marginBottom: '1.25rem',
+          color: 'var(--text-primary)',
+          letterSpacing: '-0.01em',
         }}>
           速率限制设置
         </h2>
@@ -286,14 +346,17 @@ export default function Settings() {
               <div>
                 <label style={{
                   display: 'block',
-                  fontWeight: '500',
-                  marginBottom: '0.25rem',
+                  fontWeight: '600',
+                  marginBottom: '0.375rem',
+                  fontFamily: 'var(--font-body)',
+                  color: 'var(--text-primary)',
                 }}>
                   启用速率限制
                 </label>
                 <p style={{
                   fontSize: '0.875rem',
-                  color: '#666',
+                  color: 'var(--text-secondary)',
+                  fontFamily: 'var(--font-body)',
                 }}>
                   防止公开API被滥用，限制每个IP的请求频率
                 </p>
@@ -321,7 +384,7 @@ export default function Settings() {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  background: rateLimitEnabled ? '#3b82f6' : '#ccc',
+                  background: rateLimitEnabled ? 'var(--accent-primary)' : 'var(--gray-600)',
                   transition: '0.4s',
                   borderRadius: '24px',
                 }}>
@@ -332,7 +395,7 @@ export default function Settings() {
                     width: '18px',
                     left: rateLimitEnabled ? '23px' : '3px',
                     bottom: '3px',
-                    background: 'white',
+                    background: 'var(--text-primary)',
                     transition: '0.4s',
                     borderRadius: '50%',
                   }} />
@@ -343,11 +406,14 @@ export default function Settings() {
 
           {rateLimitEnabled && (
             <>
-              <div style={{ marginBottom: '1rem' }}>
+              <div style={{ marginBottom: '1.25rem' }}>
                 <label style={{
                   display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: '500',
+                  marginBottom: '0.625rem',
+                  fontWeight: '600',
+                  fontFamily: 'var(--font-body)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.875rem',
                 }}>
                   请求次数限制
                 </label>
@@ -359,26 +425,35 @@ export default function Settings() {
                   onChange={(e) => setRequestsLimit(parseInt(e.target.value) || 10)}
                   style={{
                     width: '100%',
-                    padding: '0.5rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
+                    padding: '0.75rem',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '8px',
                     fontSize: '1rem',
+                    fontFamily: 'var(--font-body)',
+                    background: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)',
+                    outline: 'none',
+                    transition: 'all var(--transition-base)',
                   }}
                 />
                 <p style={{
-                  marginTop: '0.5rem',
+                  marginTop: '0.625rem',
                   fontSize: '0.875rem',
-                  color: '#666',
+                  color: 'var(--text-tertiary)',
+                  fontFamily: 'var(--font-body)',
                 }}>
                   时间窗口内允许的最大请求次数（1-1000次）
                 </p>
               </div>
 
-              <div style={{ marginBottom: '1rem' }}>
+              <div style={{ marginBottom: '1.25rem' }}>
                 <label style={{
                   display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: '500',
+                  marginBottom: '0.625rem',
+                  fontWeight: '600',
+                  fontFamily: 'var(--font-body)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.875rem',
                 }}>
                   时间窗口（分钟）
                 </label>
@@ -390,16 +465,22 @@ export default function Settings() {
                   onChange={(e) => setWindowMinutes(parseInt(e.target.value) || 1)}
                   style={{
                     width: '100%',
-                    padding: '0.5rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
+                    padding: '0.75rem',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '8px',
                     fontSize: '1rem',
+                    fontFamily: 'var(--font-body)',
+                    background: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)',
+                    outline: 'none',
+                    transition: 'all var(--transition-base)',
                   }}
                 />
                 <p style={{
-                  marginTop: '0.5rem',
+                  marginTop: '0.625rem',
                   fontSize: '0.875rem',
-                  color: '#666',
+                  color: 'var(--text-tertiary)',
+                  fontFamily: 'var(--font-body)',
                 }}>
                   速率限制的时间窗口大小（1-60分钟）。当前设置：每{windowMinutes}分钟最多{requestsLimit}次请求
                 </p>
@@ -411,13 +492,17 @@ export default function Settings() {
             type="submit"
             disabled={mutation.isPending}
             style={{
-              background: mutation.isPending ? '#ccc' : '#3b82f6',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '4px',
-              border: 'none',
+              background: mutation.isPending ? 'var(--gray-700)' : 'var(--accent-primary)',
+              color: mutation.isPending ? 'var(--text-tertiary)' : '#ffffff',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              border: '1px solid',
+              borderColor: mutation.isPending ? 'var(--border-subtle)' : 'var(--accent-primary)',
               cursor: mutation.isPending ? 'not-allowed' : 'pointer',
               fontSize: '1rem',
+              fontWeight: '600',
+              fontFamily: 'var(--font-body)',
+              transition: 'all var(--transition-base)',
             }}
           >
             {mutation.isPending ? '保存中...' : '保存设置'}
@@ -427,15 +512,20 @@ export default function Settings() {
 
       {/* 插件管理 */}
       <div style={{
-        background: 'white',
-        padding: '1.5rem',
-        borderRadius: '8px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        background: 'var(--bg-elevated)',
+        padding: '1.75rem',
+        borderRadius: '12px',
+        boxShadow: 'var(--shadow-md)',
+        border: '1px solid var(--border-subtle)',
+        animation: 'fadeIn 0.5s ease-out 0.3s backwards',
       }}>
         <h2 style={{
-          fontSize: '1.125rem',
-          fontWeight: '600',
-          marginBottom: '1rem',
+          fontSize: '1.25rem',
+          fontWeight: '800',
+          fontFamily: 'var(--font-heading)',
+          marginBottom: '1.25rem',
+          color: 'var(--text-primary)',
+          letterSpacing: '-0.01em',
         }}>
           插件管理
         </h2>
@@ -446,10 +536,12 @@ export default function Settings() {
               <div
                 key={plugin.name}
                 style={{
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '6px',
-                  padding: '1rem',
-                  marginBottom: '1rem',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '8px',
+                  padding: '1.25rem',
+                  marginBottom: '1.25rem',
+                  background: 'var(--bg-secondary)',
+                  transition: 'all var(--transition-base)',
                 }}
               >
                 <div style={{
@@ -461,14 +553,17 @@ export default function Settings() {
                   <div>
                     <h3 style={{
                       fontSize: '1rem',
-                      fontWeight: '600',
-                      marginBottom: '0.25rem',
+                      fontWeight: '700',
+                      marginBottom: '0.375rem',
+                      fontFamily: 'var(--font-heading)',
+                      color: 'var(--text-primary)',
                     }}>
                       {plugin.name === 'seven_day_expiry' ? '7天过期插件' : plugin.name}
                     </h3>
                     <p style={{
                       fontSize: '0.875rem',
-                      color: '#6b7280',
+                      color: 'var(--text-secondary)',
+                      fontFamily: 'var(--font-body)',
                     }}>
                       版本: {plugin.version} | 类型: {plugin.type === 'expiry' ? '过期策略' : '链接'}
                     </p>
@@ -480,7 +575,8 @@ export default function Settings() {
                   }}>
                     <span style={{
                       fontSize: '0.875rem',
-                      color: '#6b7280',
+                      color: 'var(--text-secondary)',
+                      fontFamily: 'var(--font-body)',
                     }}>
                       {pluginConfigs[plugin.name]?.enabled ? '已启用' : '已禁用'}
                     </span>
@@ -515,7 +611,7 @@ export default function Settings() {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        background: pluginConfigs[plugin.name]?.enabled ? '#3b82f6' : '#ccc',
+                        background: pluginConfigs[plugin.name]?.enabled ? 'var(--accent-primary)' : 'var(--gray-600)',
                         transition: '0.4s',
                         borderRadius: '24px',
                       }}>
@@ -526,7 +622,7 @@ export default function Settings() {
                           width: '18px',
                           left: pluginConfigs[plugin.name]?.enabled ? '23px' : '3px',
                           bottom: '3px',
-                          background: 'white',
+                          background: 'var(--text-primary)',
                           transition: '0.4s',
                           borderRadius: '50%',
                         }} />
@@ -539,9 +635,11 @@ export default function Settings() {
                   <div style={{ marginTop: '1rem' }}>
                     <label style={{
                       display: 'block',
-                      marginBottom: '0.5rem',
-                      fontWeight: '500',
+                      marginBottom: '0.625rem',
+                      fontWeight: '600',
                       fontSize: '0.875rem',
+                      fontFamily: 'var(--font-body)',
+                      color: 'var(--text-secondary)',
                     }}>
                       默认过期天数
                     </label>
@@ -562,16 +660,22 @@ export default function Settings() {
                       }}
                       style={{
                         width: '100%',
-                        padding: '0.5rem',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
+                        padding: '0.75rem',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '8px',
                         fontSize: '0.875rem',
+                        fontFamily: 'var(--font-body)',
+                        background: 'var(--bg-primary)',
+                        color: 'var(--text-primary)',
+                        outline: 'none',
+                        transition: 'all var(--transition-base)',
                       }}
                     />
                     <p style={{
-                      marginTop: '0.5rem',
+                      marginTop: '0.625rem',
                       fontSize: '0.75rem',
-                      color: '#666',
+                      color: 'var(--text-tertiary)',
+                      fontFamily: 'var(--font-body)',
                     }}>
                       设置链接的默认过期天数（1-365天）
                     </p>
@@ -583,13 +687,17 @@ export default function Settings() {
                   disabled={pluginMutation.isPending}
                   style={{
                     marginTop: '1rem',
-                    background: pluginMutation.isPending ? '#ccc' : '#10b981',
-                    color: 'white',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '4px',
-                    border: 'none',
+                    background: pluginMutation.isPending ? 'var(--gray-700)' : 'var(--success)',
+                    color: 'var(--text-primary)',
+                    padding: '0.75rem 1.25rem',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: pluginMutation.isPending ? 'var(--border-subtle)' : 'var(--success)',
                     cursor: pluginMutation.isPending ? 'not-allowed' : 'pointer',
                     fontSize: '0.875rem',
+                    fontWeight: '600',
+                    fontFamily: 'var(--font-body)',
+                    transition: 'all var(--transition-base)',
                   }}
                 >
                   {pluginMutation.isPending ? '保存中...' : '保存插件配置'}
@@ -598,7 +706,10 @@ export default function Settings() {
             ))}
           </div>
         ) : (
-          <p style={{ color: '#6b7280' }}>暂无可用插件</p>
+          <p style={{
+            color: 'var(--text-secondary)',
+            fontFamily: 'var(--font-body)',
+          }}>暂无可用插件</p>
         )}
       </div>
     </div>
