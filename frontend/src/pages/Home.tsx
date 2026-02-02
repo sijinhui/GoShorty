@@ -14,7 +14,7 @@ export default function Home() {
     short_code: string;
   } | null>(null);
   const [error, setError] = useState('');
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [_, setIsTransitioning] = useState(false);
   const { theme, toggleTheme } = useThemeStore();
 
   // 监听主题变化，在动画期间隐藏网格
@@ -67,13 +67,7 @@ export default function Home() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: theme === 'dark'
-        ? `
-          radial-gradient(circle at 20% 30%, rgba(138, 138, 138, 0.15) 0%, transparent 50%),
-          radial-gradient(circle at 80% 70%, rgba(138, 138, 138, 0.1) 0%, transparent 50%),
-          linear-gradient(135deg, #121212 0%, #1a1a1a 50%, #121212 100%)
-        `
-        : 'var(--gray-300)',
+      background: 'var(--page-background)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -122,15 +116,7 @@ export default function Home() {
       <div style={{
         position: 'absolute',
         inset: 0,
-        backgroundImage: theme === 'dark'
-          ? `
-            linear-gradient(var(--gray-800) 1px, transparent 1px),
-            linear-gradient(90deg, var(--gray-800) 1px, transparent 1px)
-          `
-          : `
-            linear-gradient(var(--gray-600) 1px, transparent 1px),
-            linear-gradient(90deg, var(--gray-600) 1px, transparent 1px)
-          `,
+        backgroundImage: 'var(--grid-background)',
         backgroundSize: '50px 50px',
         opacity: theme === 'dark' ? 0.3 : 0.12,
         pointerEvents: 'none',

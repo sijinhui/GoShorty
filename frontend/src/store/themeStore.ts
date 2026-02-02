@@ -46,7 +46,9 @@ const toggleThemeWithAnimation = (
       `circle(${endRadius}px at ${x}px ${y}px)`,
     ];
     const isDark = newTheme === 'dark';
-    // 新主题从点击位置扩散出来，覆盖旧主题
+    // 根据切换方向选择不同的动画方式
+    // 切换到暗色：旧视图（亮色）收缩消失
+    // 切换到亮色：新视图（亮色）扩散覆盖
     document.documentElement.animate(
       {
         clipPath: isDark ? [...clipPath].reverse() : clipPath,
@@ -54,7 +56,9 @@ const toggleThemeWithAnimation = (
       {
         duration: 500,
         easing: 'ease-in-out',
-        pseudoElement: '::view-transition-new(root)',
+        pseudoElement: isDark
+          ? '::view-transition-old(root)'
+          : '::view-transition-new(root)',
       }
     );
   });
@@ -63,7 +67,7 @@ const toggleThemeWithAnimation = (
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      theme: 'dark',
+      theme: 'light',
       toggleTheme: (event?: React.MouseEvent) => {
         const currentTheme = get().theme;
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -96,12 +100,12 @@ export const initTheme = () => {
   if (storedTheme) {
     try {
       const { state } = JSON.parse(storedTheme);
-      const theme = state?.theme || 'dark';
+      const theme = state?.theme || 'light';
       document.documentElement.setAttribute('data-theme', theme);
     } catch (e) {
-      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.setAttribute('data-theme', 'light');
     }
   } else {
-    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.setAttribute('data-theme', 'light');
   }
 };
