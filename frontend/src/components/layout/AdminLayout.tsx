@@ -17,16 +17,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{
+      display: 'flex',
+      minHeight: '100vh',
+      background: 'var(--bg-primary)',
+    }}>
       <Sidebar onLogout={handleLogout} />
 
       <div style={{
         marginLeft: '250px',
         flex: 1,
-        background: '#f5f5f5',
+        background: 'var(--bg-primary)',
       }}>
         <main style={{
           padding: '2rem',
+          maxWidth: '1400px',
+          animation: 'fadeIn 0.4s ease-out',
         }}>
           {children}
         </main>
