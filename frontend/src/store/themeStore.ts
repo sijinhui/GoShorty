@@ -45,12 +45,11 @@ const toggleThemeWithAnimation = (
       `circle(0px at ${x}px ${y}px)`,
       `circle(${endRadius}px at ${x}px ${y}px)`,
     ];
-
-    // dark → light: 收缩效果（对new应用反向clipPath）
-    // light → dark: 扩散效果（对new应用正向clipPath）
+    const isDark = newTheme === 'dark';
+    // 新主题从点击位置扩散出来，覆盖旧主题
     document.documentElement.animate(
       {
-        clipPath: newTheme === 'light' ? [...clipPath].reverse() : clipPath,
+        clipPath: isDark ? [...clipPath].reverse() : clipPath,
       },
       {
         duration: 500,
