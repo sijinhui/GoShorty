@@ -56,6 +56,9 @@ const toggleThemeWithAnimation = (
       {
         duration: 500,
         easing: 'ease-in-out',
+        // 核心修复：fill: 'forwards'
+        // 确保动画结束后，停留在最后一帧（半径为0或满屏），防止瞬间回弹
+        fill: 'forwards',
         pseudoElement: isDark
           ? '::view-transition-old(root)'
           : '::view-transition-new(root)',
