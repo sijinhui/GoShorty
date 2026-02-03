@@ -3,7 +3,8 @@
 services:
   app:
     build: .
-    container_name: goshorty-app
+    container_name: goshorty
+    image: hub.xiaosi.cc/ghcr.io/sijinhui/goshorty
     environment:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 8800
