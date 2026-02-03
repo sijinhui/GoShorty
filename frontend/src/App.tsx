@@ -25,10 +25,108 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // 认证检查期间显示加载指示器
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">验证会话中...</p>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--page-background)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* 装饰性网格背景 */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'var(--grid-background)',
+            backgroundSize: '40px 40px',
+            opacity: 0.3,
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* 主加载内容 */}
+        <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          {/* 加载动画容器 */}
+          <div style={{ position: 'relative', display: 'inline-block', marginBottom: '2rem' }}>
+            {/* 外层脉冲圆环 */}
+            <div
+              style={{
+                position: 'absolute',
+                inset: '-20px',
+                borderRadius: '50%',
+                border: '2px solid var(--accent-primary)',
+                opacity: 0.2,
+                animation: 'ripple 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                inset: '-20px',
+                borderRadius: '50%',
+                border: '2px solid var(--accent-primary)',
+                opacity: 0.2,
+                animation: 'ripple 2s cubic-bezier(0.4, 0, 0.6, 1) infinite 0.5s',
+              }}
+            />
+
+            {/* 中心旋转圆环 */}
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                border: '3px solid var(--border-subtle)',
+                borderTopColor: 'var(--accent-primary)',
+                animation: 'spin 1s linear infinite',
+                boxShadow: 'var(--shadow-lg)',
+              }}
+            />
+
+            {/* 中心点 */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: 'var(--accent-primary)',
+                animation: 'float 2s ease-in-out infinite',
+                boxShadow: '0 0 20px var(--accent-primary)',
+              }}
+            />
+          </div>
+
+          {/* 加载文字 */}
+          <div
+            style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: '1.125rem',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              marginBottom: '0.5rem',
+              animation: 'fadeIn 0.6s ease-out',
+            }}
+          >
+            验证会话中
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.875rem',
+              color: 'var(--text-tertiary)',
+              animation: 'fadeIn 0.8s ease-out',
+            }}
+          >
+            正在确认您的身份...
+          </div>
         </div>
       </div>
     );
