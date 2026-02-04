@@ -1,5 +1,9 @@
+import { Table, Tag, Typography, Button, Popconfirm, Space, Tooltip, Badge } from 'antd';
+import { DeleteOutlined, ClockCircleOutlined, GlobalOutlined, LinkOutlined } from '@ant-design/icons';
 import type { Link, PaginationMeta } from '../../types/api';
-import LinkRow from './LinkRow';
+import type { ColumnsType } from 'antd/es/table';
+
+const { Text } = Typography;
 
 interface LinkTableProps {
   links: Link[];
@@ -7,204 +11,155 @@ interface LinkTableProps {
   onPageChange: (page: number) => void;
   onDelete: (id: number) => void;
   expiryShortCodes: Set<string>;
+  loading?: boolean;
 }
 
-export default function LinkTable({ links, pagination, onPageChange, onDelete, expiryShortCodes }: LinkTableProps) {
-  if (!links || links.length === 0) {
-    return (
-      <div style={{
-        background: 'var(--bg-elevated)',
-        padding: '3rem',
-        borderRadius: '12px',
-        textAlign: 'center',
-        color: 'var(--text-secondary)',
-        border: '1px solid var(--border-subtle)',
-        fontFamily: 'var(--font-body)',
-        animation: 'fadeIn 0.4s ease-out',
-      }}>
-        暂无链接数据
-      </div>
-    );
-  }
+export default function LinkTable({
+  links,
+  pagination,
+  onPageChange,
+  onDelete,
+  expiryShortCodes,
+  loading = false
+}: LinkTableProps) {
+
+  const columns: ColumnsType<Link> = [
+    {
+      title: '短码',
+      dataIndex: 'short_code',
+      key: 'short_code',
+      width: 180,
+      render: (text, record) => (
+        <Space direction="vertical" size={2}>
+          <Text copyable strong style={{ fontFamily: 'monospace' }}>{text}</Text>
+          <Space size={4}>
+            {record.custom_code && (
+              <Tag color="success" style={{ fontSize: '10px', lineHeight: '18px' }}>自定义</Tag>
+            )}
+            {expiryShortCodes.has(record.short_code) && (
+              <Tooltip title="设有过期时间">
+                <Tag color="warning" icon={<ClockCircleOutlined />} style={{ fontSize: '10px', lineHeight: '18px' }}>
+                  限时
+                </Tag>
+              </Tooltip>
+            )}
+          </Space>
+        </Space>
+      ),
+    },
+    {
+      title: '原始链接',
+      dataIndex: 'original_url',
+      key: 'original_url',
+      ellipsis: {
+        showTitle: false,
+      },
+      render: (text, record) => (
+        <Tooltip placement="topLeft" title={text}>
+          <Space direction="vertical" size={0} style={{ width: '100%' }}>
+            <a
+              href={text}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', maxWidth: '100%' }}
+            >
+              <LinkOutlined />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{text}</span>
+            </a>
+            {record.title && (
+              <Text type="secondary" style={{ fontSize: '12px' }}>{record.title}</Text>
+            )}
+          </Space>
+        </Tooltip>
+      ),
+    },
+    {
+      title: 'IP',
+      dataIndex: 'created_ip',
+      key: 'created_ip',
+      width: 140,
+      render: (text) => (
+        <Space>
+          <GlobalOutlined style={{ color: 'var(--text-tertiary)' }} />
+          <Text type="secondary" style={{ fontFamily: 'monospace' }}>{text || '-'}</Text>
+        </Space>
+      ),
+    },
+    {
+      title: '点击数',
+      dataIndex: 'click_count',
+      key: 'click_count',
+      align: 'center',
+      width: 100,
+      sorter: (a, b) => a.click_count - b.click_count,
+      render: (count) => (
+        <Badge
+          count={count}
+          overflowCount={9999}
+          showZero
+          color={count > 0 ? 'var(--accent-primary)' : 'var(--gray-400)'}
+        />
+      ),
+    },
+    {
+      title: '状态',
+      key: 'status',
+      width: 100,
+      render: (_, record) => (
+        <Tag color={record.is_active ? 'success' : 'error'}>
+          {record.is_active ? '活跃' : '已禁用'}
+        </Tag>
+      ),
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 180,
+      render: (text) => (
+        <Text type="secondary" style={{ fontSize: '13px' }}>
+          {new Date(text).toLocaleString('zh-CN')}
+        </Text>
+      ),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 100,
+      align: 'right',
+      render: (_, record) => (
+        <Popconfirm
+          title="删除链接"
+          description="确定要删除这个短链接吗？"
+          onConfirm={() => onDelete(record.id)}
+          okText="删除"
+          cancelText="取消"
+          okButtonProps={{ danger: true }}
+        >
+          <Button type="link" danger size="small" icon={<DeleteOutlined />}>
+            删除
+          </Button>
+        </Popconfirm>
+      ),
+    },
+  ];
 
   return (
-    <div style={{
-      background: 'var(--bg-elevated)',
-      borderRadius: '12px',
-      overflow: 'hidden',
-      border: '1px solid var(--border-subtle)',
-      boxShadow: 'var(--shadow-md)',
-      animation: 'fadeIn 0.4s ease-out',
-    }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{
-            background: 'var(--bg-hover)',
-            borderBottom: '1px solid var(--border-subtle)',
-          }}>
-            <th style={{
-              padding: '1rem 0.875rem',
-              textAlign: 'left',
-              fontSize: '0.8125rem',
-              fontWeight: '700',
-              fontFamily: 'var(--font-body)',
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-            }}>短码</th>
-            <th style={{
-              padding: '1rem 0.875rem',
-              textAlign: 'left',
-              fontSize: '0.8125rem',
-              fontWeight: '700',
-              fontFamily: 'var(--font-body)',
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-            }}>原始链接</th>
-            <th style={{
-              padding: '1rem 0.875rem',
-              textAlign: 'left',
-              fontSize: '0.8125rem',
-              fontWeight: '700',
-              fontFamily: 'var(--font-body)',
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-            }}>IP</th>
-            <th style={{
-              padding: '1rem 0.875rem',
-              textAlign: 'center',
-              fontSize: '0.8125rem',
-              fontWeight: '700',
-              fontFamily: 'var(--font-body)',
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-            }}>点击数</th>
-            <th style={{
-              padding: '1rem 0.875rem',
-              textAlign: 'left',
-              fontSize: '0.8125rem',
-              fontWeight: '700',
-              fontFamily: 'var(--font-body)',
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-            }}>状态</th>
-            <th style={{
-              padding: '1rem 0.875rem',
-              textAlign: 'left',
-              fontSize: '0.8125rem',
-              fontWeight: '700',
-              fontFamily: 'var(--font-body)',
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-            }}>创建时间</th>
-            <th style={{
-              padding: '1rem 0.875rem',
-              textAlign: 'right',
-              fontSize: '0.8125rem',
-              fontWeight: '700',
-              fontFamily: 'var(--font-body)',
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-            }}>操作</th>
-          </tr>
-        </thead>
-          <tbody>
-            {links.map((link) => (
-              <LinkRow
-                key={link.id}
-                link={link}
-                onDelete={onDelete}
-                hasExpiry={expiryShortCodes.has(link.short_code)}
-              />
-            ))}
-          </tbody>
-        </table>
-
-      {/* 分页控制 */}
-      <div style={{
-        padding: '1rem 1.25rem',
-        borderTop: '1px solid var(--border-subtle)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        background: 'var(--bg-hover)',
-      }}>
-        <div style={{
-          fontSize: '0.875rem',
-          color: 'var(--text-secondary)',
-          fontFamily: 'var(--font-body)',
-          fontWeight: '500',
-        }}>
-          第 {pagination.page} / {pagination.total_pages} 页
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.625rem' }}>
-          <button
-            onClick={() => onPageChange(pagination.page - 1)}
-            disabled={!pagination.has_prev}
-            style={{
-              padding: '0.625rem 1.25rem',
-              background: pagination.has_prev ? 'var(--accent-primary)' : 'var(--gray-700)',
-              color: pagination.has_prev ? '#ffffff' : 'var(--text-tertiary)',
-              border: '1px solid',
-              borderColor: pagination.has_prev ? 'var(--accent-primary)' : 'var(--border-subtle)',
-              borderRadius: '6px',
-              cursor: pagination.has_prev ? 'pointer' : 'not-allowed',
-              fontSize: '0.875rem',
-              fontFamily: 'var(--font-body)',
-              fontWeight: '600',
-              transition: 'all var(--transition-base)',
-            }}
-            onMouseEnter={(e) => {
-              if (pagination.has_prev) {
-                e.currentTarget.style.background = 'var(--accent-hover)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (pagination.has_prev) {
-                e.currentTarget.style.background = 'var(--accent-primary)';
-              }
-            }}
-          >
-            上一页
-          </button>
-          <button
-            onClick={() => onPageChange(pagination.page + 1)}
-            disabled={!pagination.has_next}
-            style={{
-              padding: '0.625rem 1.25rem',
-              background: pagination.has_next ? 'var(--accent-primary)' : 'var(--gray-700)',
-              color: pagination.has_next ? '#ffffff' : 'var(--text-tertiary)',
-              border: '1px solid',
-              borderColor: pagination.has_next ? 'var(--accent-primary)' : 'var(--border-subtle)',
-              borderRadius: '6px',
-              cursor: pagination.has_next ? 'pointer' : 'not-allowed',
-              fontSize: '0.875rem',
-              fontFamily: 'var(--font-body)',
-              fontWeight: '600',
-              transition: 'all var(--transition-base)',
-            }}
-            onMouseEnter={(e) => {
-              if (pagination.has_next) {
-                e.currentTarget.style.background = 'var(--accent-hover)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (pagination.has_next) {
-                e.currentTarget.style.background = 'var(--accent-primary)';
-              }
-            }}
-          >
-            下一页
-          </button>
-        </div>
-      </div>
-    </div>
+    <Table
+      columns={columns}
+      dataSource={links}
+      rowKey="id"
+      loading={loading}
+      pagination={{
+        current: pagination.page,
+        pageSize: pagination.limit,
+        total: pagination.total,
+        onChange: onPageChange,
+        showTotal: (total) => `共 ${total} 条链接`,
+        position: ['bottomCenter'],
+      }}
+      scroll={{ x: 1000 }}
+    />
   );
 }
+

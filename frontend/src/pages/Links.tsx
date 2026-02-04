@@ -1,14 +1,20 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Typography, message, Card, Button, Space, Tooltip } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
 import { getLinks, deleteLink } from '../api/links';
 import { getExpiredLinks } from '../api/linkExpiry';
 import LinkTable from '../components/links/LinkTable';
+import type { APIError } from '../types/api';
+
+const { Title } = Typography;
 
 export default function Links() {
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
+  const [messageApi, contextHolder] = message.useMessage();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['links', page],
     queryFn: () => getLinks(page, 20),
   });
@@ -22,49 +28,22 @@ export default function Links() {
   const deleteMutation = useMutation({
     mutationFn: deleteLink,
     onSuccess: () => {
+      messageApi.success('删除成功');
       queryClient.invalidateQueries({ queryKey: ['links'] });
+    },
+    onError: () => {
+      messageApi.error('删除失败');
     },
   });
 
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteMutation.mutateAsync(id);
-    } catch (error) {
-      alert('删除失败');
-    }
+  const handleDelete = (id: number) => {
+    deleteMutation.mutate(id);
   };
 
   // 创建短码集合，用于快速查找
   const expiryShortCodes = new Set(
     expiryData?.data?.expiries?.map(e => e.short_code) || []
   );
-
-  if (isLoading) {
-    return (
-      <div style={{
-        textAlign: 'center',
-        padding: '3rem',
-        color: 'var(--text-secondary)',
-        fontFamily: 'var(--font-body)',
-      }}>
-        <div style={{
-          display: 'inline-block',
-          width: '40px',
-          height: '40px',
-          border: '3px solid var(--border-subtle)',
-          borderTopColor: 'var(--accent-primary)',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-        }} />
-        <p style={{ marginTop: '1rem', fontSize: '0.875rem' }}>加载中...</p>
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -76,34 +55,44 @@ export default function Links() {
         border: '1px solid var(--error)',
         fontFamily: 'var(--font-body)',
       }}>
-        加载失败：{(error as any).error || '未知错误'}
+        加载失败：{(error as unknown as APIError).error || '未知错误'}
       </div>
     );
   }
 
   return (
-    <div>
-      <h1 style={{
-        fontSize: '1.75rem',
-        fontWeight: '800',
-        fontFamily: 'var(--font-heading)',
-        marginBottom: '2rem',
-        color: 'var(--text-primary)',
-        letterSpacing: '-0.01em',
-        animation: 'fadeIn 0.5s ease-out',
-      }}>
-        链接管理
-      </h1>
+    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+      {contextHolder}
 
-      {data && (
-        <LinkTable
-          links={data.data}
-          pagination={data.pagination}
-          onPageChange={setPage}
-          onDelete={handleDelete}
-          expiryShortCodes={expiryShortCodes}
-        />
-      )}
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Title level={2} style={{ margin: 0 }}>链接管理</Title>
+        <Space>
+          <Tooltip title="刷新列表">
+            <Button
+              icon={<ReloadOutlined spin={isFetching} />}
+              onClick={() => refetch()}
+              disabled={isFetching}
+            />
+          </Tooltip>
+        </Space>
+      </div>
+
+      <Card
+        bordered={false}
+        bodyStyle={{ padding: 0 }}
+        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderRadius: '8px', overflow: 'hidden' }}
+      >
+        {data && (
+          <LinkTable
+            links={data.data}
+            pagination={data.pagination}
+            onPageChange={setPage}
+            onDelete={handleDelete}
+            expiryShortCodes={expiryShortCodes}
+            loading={isLoading}
+          />
+        )}
+      </Card>
     </div>
   );
 }
