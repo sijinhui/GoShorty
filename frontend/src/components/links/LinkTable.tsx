@@ -1,7 +1,8 @@
-import { Table, Tag, Typography, Button, Popconfirm, Space, Tooltip, Badge } from 'antd';
+import { Table, Tag, Typography, Button, Popconfirm, Space, Tooltip, Badge, message } from 'antd';
 import { DeleteOutlined, ClockCircleOutlined, GlobalOutlined, LinkOutlined } from '@ant-design/icons';
 import type { Link, PaginationMeta } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
+import { getShortLinkUrl } from '../../utils/url';
 
 const { Text } = Typography;
 
@@ -22,6 +23,7 @@ export default function LinkTable({
   expiryShortCodes,
   loading = false
 }: LinkTableProps) {
+  const [messageApi, contextHolder] = message.useMessage();
 
   const columns: ColumnsType<Link> = [
     {
@@ -31,7 +33,18 @@ export default function LinkTable({
       width: 180,
       render: (text, record) => (
         <Space direction="vertical" size={2}>
-          <Text copyable strong style={{ fontFamily: 'monospace' }}>{text}</Text>
+          <Text
+            copyable={{
+              text: getShortLinkUrl(text),
+              onCopy: () => {
+                messageApi.success('短链接已复制到剪贴板');
+              }
+            }}
+            strong
+            style={{ fontFamily: 'monospace' }}
+          >
+            {text}
+          </Text>
           <Space size={4}>
             {record.custom_code && (
               <Tag color="success" style={{ fontSize: '10px', lineHeight: '18px' }}>自定义</Tag>
@@ -145,21 +158,24 @@ export default function LinkTable({
   ];
 
   return (
-    <Table
-      columns={columns}
-      dataSource={links}
-      rowKey="id"
-      loading={loading}
-      pagination={{
-        current: pagination.page,
-        pageSize: pagination.limit,
-        total: pagination.total,
-        onChange: onPageChange,
-        showTotal: (total) => `共 ${total} 条链接`,
-        position: ['bottomCenter'],
-      }}
-      scroll={{ x: 1000 }}
-    />
+    <>
+      {contextHolder}
+      <Table
+        columns={columns}
+        dataSource={links}
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          current: pagination.page,
+          pageSize: pagination.limit,
+          total: pagination.total,
+          onChange: onPageChange,
+          showTotal: (total) => `共 ${total} 条链接`,
+          position: ['bottomCenter'],
+        }}
+        scroll={{ x: 1000 }}
+      />
+    </>
   );
 }
 

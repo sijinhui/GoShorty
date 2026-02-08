@@ -13,6 +13,7 @@ import {
 } from 'antd';
 import { DeleteOutlined, ExclamationCircleOutlined, ReloadOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { getExpiredLinks, deleteExpiredLink, deleteAllExpiredLinks, cancelExpiry } from '../api/linkExpiry';
+import { getShortLinkUrl } from '../utils/url';
 import type { LinkExpiry } from '../api/linkExpiry';
 import type { ColumnsType } from 'antd/es/table';
 import type { APIError } from '../types/api';
@@ -74,7 +75,17 @@ export default function LinkExpiryPage() {
       dataIndex: 'short_code',
       key: 'short_code',
       render: (text) => (
-        <Typography.Text copyable strong>{text}</Typography.Text>
+        <Typography.Text
+          copyable={{
+            text: getShortLinkUrl(text),
+            onCopy: () => {
+              messageApi.success('短链接已复制到剪贴板');
+            }
+          }}
+          strong
+        >
+          {text}
+        </Typography.Text>
       ),
     },
     {

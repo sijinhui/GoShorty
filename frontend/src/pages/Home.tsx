@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { createPublicLink } from '../api/public';
 import { notification } from '../components/AntdStaticMethods';
 import { useThemeStore } from '../store/themeStore';
+import CopyButton from '../components/common/CopyButton';
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -389,42 +390,12 @@ export default function Home() {
               >
                 {result.short_url}
               </a>
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(result.short_url);
-                  notification.success({
-                    title: '复制成功',
-                    description: '短链接已复制到剪贴板',
-                    placement: 'topRight',
-                    duration: 3,
-                    showProgress: true,
-                  });
-                }}
-                style={{
-                  padding: '0.875rem',
-                  background: 'var(--accent-primary)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '600',
-                  fontFamily: 'var(--font-body)',
-                  transition: 'all var(--transition-base)',
-                  boxShadow: 'var(--shadow-md)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--accent-hover)';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'var(--accent-primary)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                复制链接
-              </button>
+              <CopyButton
+                text={result.short_url}
+                successMessage="短链接已复制到剪贴板"
+                buttonText="复制链接"
+                variant="primary"
+              />
             </div>
           </div>
         )}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { createLink } from '../../api/links';
 import type { CreateLinkRequest } from '../../types/api';
+import CopyButton from '../common/CopyButton';
 
 interface CreateLinkFormProps {
   onSuccess?: () => void;
@@ -16,16 +17,20 @@ export default function CreateLinkForm({ onSuccess }: CreateLinkFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [shortUrl, setShortUrl] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
     setSuccess(null);
+    setShortUrl(null);
 
     try {
       const response = await createLink(formData);
-      setSuccess(`短链接创建成功！${response.data?.short_url || ''}`);
+      const url = response.data?.short_url || '';
+      setShortUrl(url);
+      setSuccess('短链接创建成功！');
       setFormData({
         original_url: '',
         short_code: '',
@@ -75,7 +80,7 @@ export default function CreateLinkForm({ onSuccess }: CreateLinkFormProps) {
         </div>
       )}
 
-      {success && (
+      {success && shortUrl && (
         <div style={{
           background: 'rgba(107, 142, 127, 0.15)',
           color: 'var(--success)',
@@ -87,7 +92,32 @@ export default function CreateLinkForm({ onSuccess }: CreateLinkFormProps) {
           fontSize: '0.875rem',
           animation: 'fadeIn 0.3s ease-out',
         }}>
-          {success}
+          <div style={{ marginBottom: '0.75rem' }}>{success}</div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            background: 'var(--bg-elevated)',
+            padding: '0.75rem',
+            borderRadius: '6px',
+            border: '1px solid var(--border-subtle)',
+          }}>
+            <code style={{
+              flex: 1,
+              fontFamily: 'monospace',
+              fontSize: '0.875rem',
+              color: 'var(--text-primary)',
+              wordBreak: 'break-all',
+            }}>
+              {shortUrl}
+            </code>
+            <CopyButton
+              text={shortUrl}
+              successMessage="短链接已复制到剪贴板"
+              variant="secondary"
+              useMessage={true}
+            />
+          </div>
         </div>
       )}
 
