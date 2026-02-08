@@ -97,6 +97,12 @@ func (h *APIHandler) CreateLink(c *gin.Context) {
 		}
 	}
 
+	h.logger.Info("creating link via API",
+		zap.String("url", req.OriginalURL),
+		zap.String("expires_at", req.ExpiresAt),
+		zap.Int("expiry_days", expiryDays),
+	)
+
 	link, err := h.linkService.CreateLink(c.Request.Context(), &service.CreateLinkRequest{
 		URL:        req.OriginalURL,
 		CustomCode: req.ShortCode,

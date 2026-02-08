@@ -177,6 +177,11 @@ func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*
 		s.logger.Warn("hooks system is nil, cannot calculate expiry")
 	}
 
+	s.logger.Info("expiry calculation result",
+		zap.Bool("has_expiry", expiresAt != nil),
+		zap.Int("expiry_days", expiryDays),
+	)
+
 	// 执行创建前钩子
 	if s.hooks != nil {
 		if err := s.hooks.ExecuteBeforeCreate(ctx, link); err != nil {
@@ -198,15 +203,29 @@ func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*
 			LifecycleDays: expiryDays,
 			ExpiresAt:     *expiresAt,
 		}
+		s.logger.Info("creating link expiry record",
+			zap.String("short_code", link.ShortCode),
+			zap.Int("lifecycle_days", expiryDays),
+			zap.Time("expires_at", *expiresAt),
+		)
 		if err := s.linkExpiryRepo.Create(ctx, linkExpiry); err != nil {
-			s.logger.Error("failed to create link expiry", zap.Error(err))
+			s.logger.Error("failed to create link expiry",
+				zap.String("short_code", link.ShortCode),
+				zap.Error(err),
+			)
 			// 不返回错误，因为链接已经创建成功
 		} else {
-			s.logger.Info("link expiry created",
+			s.logger.Info("link expiry created successfully",
 				zap.String("short_code", link.ShortCode),
 				zap.Int("lifecycle_days", expiryDays),
 			)
 		}
+	} else {
+		s.logger.Warn("skipping link expiry creation",
+			zap.Bool("has_expires_at", expiresAt != nil),
+			zap.Int("expiry_days", expiryDays),
+			zap.String("short_code", link.ShortCode),
+		)
 	}
 
 	// 执行创建后钩子
