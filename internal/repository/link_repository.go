@@ -19,6 +19,7 @@ type LinkRepository interface {
 	GetByShortCode(ctx context.Context, shortCode string) (*domain.Link, error)
 	Update(ctx context.Context, link *domain.Link) error
 	Delete(ctx context.Context, id int64) error
+	DeleteByShortCodes(ctx context.Context, shortCodes []string) (int64, error)
 	List(ctx context.Context, limit, offset int) ([]*domain.Link, error)
 	IncrementClickCount(ctx context.Context, id int64) error
 	DeleteExpired(ctx context.Context, before time.Time) error
@@ -229,7 +230,18 @@ func (r *PostgresLinkRepository) DeleteExpired(ctx context.Context, before time.
 	return err
 }
 
-// ExistsShortCode 检查短码是否已存在
+// DeleteByShortCodes 根据短码列表批量删除链接
+func (r *PostgresLinkRepository) DeleteByShortCodes(ctx context.Context, shortCodes []string) (int64, error) {
+	if len(shortCodes) == 0 {
+		return 0, nil
+	}
+	query := `DELETE FROM links WHERE short_code = ANY($1)`
+	result, err := r.pool.Exec(ctx, query, shortCodes)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
 func (r *PostgresLinkRepository) ExistsShortCode(ctx context.Context, shortCode string) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM links WHERE short_code = $1)`
 

@@ -130,12 +130,11 @@ func (r *PostgresLinkExpiryRepository) ListExpiring(ctx context.Context, limit i
 	return r.scanExpiryRows(ctx, query, limit)
 }
 
-// ListExpired 列出已过期的链接
+// ListExpired 列出所有有过期设置的链接（包括已过期和未过期的）
 func (r *PostgresLinkExpiryRepository) ListExpired(ctx context.Context, limit, offset int) ([]*domain.LinkExpiry, error) {
 	query := `
 		SELECT ` + expiryColumns + `
 		FROM link_expiry
-		WHERE expires_at < NOW()
 		ORDER BY expires_at DESC
 		LIMIT $1 OFFSET $2
 	`
