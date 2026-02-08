@@ -129,17 +129,24 @@ func (s *linkExpiryService) DeleteAllExpired(ctx context.Context) (int64, error)
 	return count, nil
 }
 
-// GetExpiredCount 获取所有有过期设置的链接数量
+// GetExpiredCount 获取真正已过期的链接数量
 func (s *linkExpiryService) GetExpiredCount(ctx context.Context) (int64, error) {
-	// 使用 ListExpired 获取所有有过期设置的链接，然后返回数量
-	// 注意：这是一个简化实现，实际应该在 repository 层添加专门的 Count 方法
+	// 获取所有有过期设置的链接
 	expiries, err := s.linkExpiryRepo.ListExpired(ctx, 10000, 0)
 	if err != nil {
 		s.logger.Error("failed to get expired count", zap.Error(err))
 		return 0, err
 	}
 
-	return int64(len(expiries)), nil
+	// 筛选出真正已过期的链接
+	var expiredCount int64
+	for _, expiry := range expiries {
+		if expiry.IsExpired() {
+			expiredCount++
+		}
+	}
+
+	return expiredCount, nil
 }
 
 // CancelExpiry 取消链接的过期设置（只删除过期记录，保留链接）

@@ -173,21 +173,25 @@ export default function LinkExpiryPage() {
               disabled={isFetching}
             />
           </Tooltip>
-          {total > 0 && (
-            <Popconfirm
-              title="警告"
-              description={`确定要删除所有 ${total} 条已过期的链接吗？此操作将同时删除链接本身，不可撤销！`}
-              onConfirm={() => deleteAllMutation.mutate()}
-              okText="全部删除"
-              cancelText="取消"
-              icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
-              okButtonProps={{ danger: true, loading: deleteAllMutation.isPending }}
+          <Popconfirm
+            title="警告"
+            description={`确定要删除所有 ${total} 条已过期的链接吗？此操作将同时删除链接本身，不可撤销！`}
+            onConfirm={() => deleteAllMutation.mutate()}
+            okText="全部删除"
+            cancelText="取消"
+            icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
+            okButtonProps={{ danger: true, loading: deleteAllMutation.isPending }}
+            disabled={total === 0}
+          >
+            <Button
+              danger
+              type="primary"
+              icon={<DeleteOutlined />}
+              disabled={total === 0}
             >
-              <Button danger type="primary" icon={<DeleteOutlined />}>
-                删除所有已过期链接 ({total})
-              </Button>
-            </Popconfirm>
-          )}
+              删除所有已过期链接 ({total})
+            </Button>
+          </Popconfirm>
         </Space>
       </div>
 
