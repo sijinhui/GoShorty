@@ -121,7 +121,9 @@ export default function CopyButton({
     if (copied) return;
 
     const styles = getButtonStyles();
-    e.currentTarget.style.background = styles.background as string;
+    if ('background' in styles) {
+      e.currentTarget.style.background = styles.background;
+    }
     if (variant === 'inline') {
       e.currentTarget.style.borderColor = 'var(--border-subtle)';
     }
