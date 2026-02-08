@@ -31,9 +31,7 @@ export default function CreateLinkForm({ onSuccess }: CreateLinkFormProps) {
         short_code: '',
         title: '',
       });
-      if (onSuccess) {
-        onSuccess();
-      }
+      onSuccess?.();
     } catch (err: any) {
       setError(err.error || '创建失败');
     } finally {

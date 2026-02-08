@@ -66,7 +66,7 @@ export default function Settings() {
   });
 
   const pluginMutation = useMutation({
-    mutationFn: ({ name, config }: { name: string; config: any }) =>
+    mutationFn: ({ name, config }: { name: string; config: { enabled: boolean; days?: number } }) =>
       updatePluginConfig(name, config),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plugins'] });
@@ -85,6 +85,9 @@ export default function Settings() {
 
     mutation.mutate({ short_code_length: shortCodeLength });
   };
+
+  const isShortCodeInvalid = shortCodeLength < 3 || shortCodeLength > 20;
+  const isSubmitDisabled = mutation.isPending || isShortCodeInvalid;
 
   const handleRateLimitSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -294,15 +297,15 @@ export default function Settings() {
 
           <button
             type="submit"
-            disabled={mutation.isPending || shortCodeLength < 3 || shortCodeLength > 20}
+            disabled={isSubmitDisabled}
             style={{
-              background: mutation.isPending || shortCodeLength < 3 || shortCodeLength > 20 ? 'var(--gray-700)' : 'var(--accent-primary)',
-              color: mutation.isPending || shortCodeLength < 3 || shortCodeLength > 20 ? 'var(--text-tertiary)' : '#ffffff',
+              background: isSubmitDisabled ? 'var(--gray-700)' : 'var(--accent-primary)',
+              color: isSubmitDisabled ? 'var(--text-tertiary)' : '#ffffff',
               padding: '0.75rem 1.5rem',
               borderRadius: '8px',
               border: '1px solid',
-              borderColor: mutation.isPending || shortCodeLength < 3 || shortCodeLength > 20 ? 'var(--border-subtle)' : 'var(--accent-primary)',
-              cursor: mutation.isPending || shortCodeLength < 3 || shortCodeLength > 20 ? 'not-allowed' : 'pointer',
+              borderColor: isSubmitDisabled ? 'var(--border-subtle)' : 'var(--accent-primary)',
+              cursor: isSubmitDisabled ? 'not-allowed' : 'pointer',
               fontSize: '1rem',
               fontWeight: '600',
               fontFamily: 'var(--font-body)',

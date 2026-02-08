@@ -23,80 +23,54 @@ func NewHooks(manager *Manager, logger *zap.Logger) *Hooks {
 	}
 }
 
-// ExecuteBeforeCreate 执行创建链接前的钩子
-func (h *Hooks) ExecuteBeforeCreate(ctx context.Context, link *domain.Link) error {
-	plugins := h.manager.GetLinkPlugins()
-	for _, plugin := range plugins {
-		if !plugin.Enabled() {
+// executeLinkHook runs a named hook function across all enabled link plugins.
+// If haltOnError is true, execution stops and returns the first error encountered.
+// If haltOnError is false, all plugins are executed and errors are only logged.
+func (h *Hooks) executeLinkHook(ctx context.Context, link *domain.Link, hookName string, haltOnError bool, fn func(LinkPlugin) error) error {
+	for _, p := range h.manager.GetLinkPlugins() {
+		if !p.Enabled() {
 			continue
 		}
-		if err := plugin.OnBeforeCreate(ctx, link); err != nil {
+		if err := fn(p); err != nil {
 			h.logger.Error("plugin hook failed",
-				zap.String("plugin", plugin.Name()),
-				zap.String("hook", "OnBeforeCreate"),
+				zap.String("plugin", p.Name()),
+				zap.String("hook", hookName),
 				zap.Error(err),
 			)
-			return err
+			if haltOnError {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+// ExecuteBeforeCreate 执行创建链接前的钩子
+func (h *Hooks) ExecuteBeforeCreate(ctx context.Context, link *domain.Link) error {
+	return h.executeLinkHook(ctx, link, "OnBeforeCreate", true, func(p LinkPlugin) error {
+		return p.OnBeforeCreate(ctx, link)
+	})
 }
 
 // ExecuteAfterCreate 执行创建链接后的钩子
 func (h *Hooks) ExecuteAfterCreate(ctx context.Context, link *domain.Link) error {
-	plugins := h.manager.GetLinkPlugins()
-	for _, plugin := range plugins {
-		if !plugin.Enabled() {
-			continue
-		}
-		if err := plugin.OnAfterCreate(ctx, link); err != nil {
-			h.logger.Error("plugin hook failed",
-				zap.String("plugin", plugin.Name()),
-				zap.String("hook", "OnAfterCreate"),
-				zap.Error(err),
-			)
-			// 不返回错误，继续执行其他插件
-		}
-	}
-	return nil
+	return h.executeLinkHook(ctx, link, "OnAfterCreate", false, func(p LinkPlugin) error {
+		return p.OnAfterCreate(ctx, link)
+	})
 }
 
 // ExecuteBeforeRedirect 执行重定向前的钩子
 func (h *Hooks) ExecuteBeforeRedirect(ctx context.Context, link *domain.Link) error {
-	plugins := h.manager.GetLinkPlugins()
-	for _, plugin := range plugins {
-		if !plugin.Enabled() {
-			continue
-		}
-		if err := plugin.OnBeforeRedirect(ctx, link); err != nil {
-			h.logger.Error("plugin hook failed",
-				zap.String("plugin", plugin.Name()),
-				zap.String("hook", "OnBeforeRedirect"),
-				zap.Error(err),
-			)
-			return err
-		}
-	}
-	return nil
+	return h.executeLinkHook(ctx, link, "OnBeforeRedirect", true, func(p LinkPlugin) error {
+		return p.OnBeforeRedirect(ctx, link)
+	})
 }
 
 // ExecuteAfterRedirect 执行重定向后的钩子
 func (h *Hooks) ExecuteAfterRedirect(ctx context.Context, link *domain.Link) error {
-	plugins := h.manager.GetLinkPlugins()
-	for _, plugin := range plugins {
-		if !plugin.Enabled() {
-			continue
-		}
-		if err := plugin.OnAfterRedirect(ctx, link); err != nil {
-			h.logger.Error("plugin hook failed",
-				zap.String("plugin", plugin.Name()),
-				zap.String("hook", "OnAfterRedirect"),
-				zap.Error(err),
-			)
-			// 不返回错误，继续执行其他插件
-		}
-	}
-	return nil
+	return h.executeLinkHook(ctx, link, "OnAfterRedirect", false, func(p LinkPlugin) error {
+		return p.OnAfterRedirect(ctx, link)
+	})
 }
 
 // CalculateExpiry 计算过期时间

@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"GoShorty/internal/config"
 	"GoShorty/internal/database"
@@ -96,7 +95,7 @@ func main() {
 	}
 
 	// 从数据库获取短链接长度配置
-	shortCodeLength, err := settingsService.GetShortCodeLength(context.Background())
+	shortCodeLength, err := settingsService.GetShortCodeLength(ctx)
 	if err != nil {
 		logger.Warn("Failed to get short_code_length from database, using default 3", zap.Error(err))
 		shortCodeLength = 3
@@ -109,7 +108,7 @@ func main() {
 	authService := service.NewAuthService(userRepo, sessionRepo, cfg.Session.MaxAge, logger)
 	geoResolver := geolocation.NewSimpleGeoIPResolver()
 	analyticsService := service.NewAnalyticsService(analyticsRepo, geoResolver, logger)
-	rateLimitService := service.NewRateLimitService(rateLimitRepo, settingsRepo, logger)
+	rateLimitService := service.NewRateLimitService(rateLimitRepo, settingsService, logger)
 
 	// 初始化Handler层
 	redirectHandler := handler.NewRedirectHandler(linkService, analyticsService, logger)
@@ -198,7 +197,6 @@ func main() {
 		// 根目录静态文件（vite.svg, react.svg等）
 		staticFiles := []string{"vite.svg", "react.svg", "favicon.ico"}
 		for _, file := range staticFiles {
-			file := file // 创建局部变量副本，避免闭包问题
 			filePath := filepath.Join(cfg.Frontend.StaticPath, file)
 			router.GET("/"+file, func(c *gin.Context) {
 				c.File(filePath)
@@ -219,7 +217,7 @@ func main() {
 		router.NoRoute(func(c *gin.Context) {
 			// 如果是API请求，返回404
 			if strings.HasPrefix(c.Request.URL.Path, "/api/") ||
-			   strings.HasPrefix(c.Request.URL.Path, "/admin/api/") {
+				strings.HasPrefix(c.Request.URL.Path, "/admin/api/") {
 				c.JSON(404, gin.H{"error": "Not Found"})
 				return
 			}
@@ -240,10 +238,6 @@ func main() {
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	logger.Info("Server starting", zap.String("address", addr))
 
-	// 优雅关闭
-	srv := &gin.Engine{}
-	*srv = *router
-
 	go func() {
 		if err := router.Run(addr); err != nil {
 			logger.Fatal("Failed to start server", zap.Error(err))
@@ -256,13 +250,6 @@ func main() {
 	<-quit
 
 	logger.Info("Shutting down server...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	// 这里可以添加清理逻辑
-	_ = ctx
-
 	logger.Info("Server stopped")
 }
 

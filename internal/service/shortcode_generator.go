@@ -140,19 +140,11 @@ func DecodeBase62(encoded string) (int64, error) {
 	base := int64(len(base62Chars))
 
 	for _, char := range encoded {
-		var value int64 = -1
-		for i, c := range base62Chars {
-			if c == char {
-				value = int64(i)
-				break
-			}
-		}
-
-		if value == -1 {
+		idx := strings.IndexByte(base62Chars, byte(char))
+		if idx == -1 {
 			return 0, ErrInvalidShortCodeFormat
 		}
-
-		result = result*base + value
+		result = result*base + int64(idx)
 	}
 
 	return result, nil

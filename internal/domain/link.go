@@ -1,23 +1,21 @@
 package domain
 
-import (
-	"time"
-)
+import "time"
 
 // Link 表示一个短链接
 type Link struct {
-	ID             int64      `json:"id"`
-	ShortCode      string     `json:"short_code"`
-	OriginalURL    string     `json:"original_url"`
-	Title          string     `json:"title,omitempty"`
-	UserID         int        `json:"user_id"`
-	CreatedAt      time.Time  `json:"created_at"`
-	CreatedIP      *string    `json:"created_ip,omitempty"`
-	IsActive       bool       `json:"is_active"`
-	ClickCount     int        `json:"click_count"`
-	LastClickedAt  *time.Time `json:"last_clicked_at,omitempty"`
-	CustomCode     bool       `json:"custom_code"`
-	Metadata       map[string]interface{} `json:"metadata,omitempty"`
+	ID            int64                  `json:"id"`
+	ShortCode     string                 `json:"short_code"`
+	OriginalURL   string                 `json:"original_url"`
+	Title         string                 `json:"title,omitempty"`
+	UserID        int                    `json:"user_id"`
+	CreatedAt     time.Time              `json:"created_at"`
+	CreatedIP     *string                `json:"created_ip,omitempty"`
+	IsActive      bool                   `json:"is_active"`
+	ClickCount    int                    `json:"click_count"`
+	LastClickedAt *time.Time             `json:"last_clicked_at,omitempty"`
+	CustomCode    bool                   `json:"custom_code"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // IsValid 检查链接是否有效（处于活跃状态）

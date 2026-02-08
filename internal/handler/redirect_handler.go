@@ -35,14 +35,16 @@ func NewRedirectHandler(
 func (h *RedirectHandler) HandleRedirect(c *gin.Context) {
 	shortCode := c.Param("code")
 
-	// 查询短链接
 	link, err := h.linkService.GetByShortCode(c.Request.Context(), shortCode)
 	if err != nil {
 		h.handleError(c, err)
 		return
 	}
 
-	// 异步更新点击计数
+	// 异步更新点击计数和记录访问日志
+	clientIP := c.ClientIP()
+	userAgent := c.Request.UserAgent()
+	referer := c.Request.Referer()
 	go func() {
 		ctx := context.Background()
 		if err := h.linkService.IncrementClickCount(ctx, link.ID); err != nil {
@@ -51,18 +53,7 @@ func (h *RedirectHandler) HandleRedirect(c *gin.Context) {
 				zap.Error(err),
 			)
 		}
-	}()
-
-	// 异步记录访问日志
-	go func() {
-		ctx := context.Background()
-		if err := h.analyticsService.RecordAccess(
-			ctx,
-			link.ID,
-			c.ClientIP(),
-			c.Request.UserAgent(),
-			c.Request.Referer(),
-		); err != nil {
+		if err := h.analyticsService.RecordAccess(ctx, link.ID, clientIP, userAgent, referer); err != nil {
 			h.logger.Error("failed to record access log",
 				zap.Int64("link_id", link.ID),
 				zap.Error(err),
@@ -70,14 +61,12 @@ func (h *RedirectHandler) HandleRedirect(c *gin.Context) {
 		}
 	}()
 
-	// 记录访问日志
 	h.logger.Info("redirect",
 		zap.String("short_code", shortCode),
 		zap.String("url", link.OriginalURL),
-		zap.String("ip", c.ClientIP()),
+		zap.String("ip", clientIP),
 	)
 
-	// 302临时重定向（方便统计点击）
 	c.Redirect(http.StatusFound, link.OriginalURL)
 }
 

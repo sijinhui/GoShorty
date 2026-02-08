@@ -35,6 +35,40 @@ func NewPostgresLinkRepository(pool *pgxpool.Pool) *PostgresLinkRepository {
 	return &PostgresLinkRepository{pool: pool}
 }
 
+// linkColumns is the standard column list for link queries.
+const linkColumns = `id, short_code, original_url, title, user_id, created_at, created_ip,
+		       is_active, click_count, last_clicked_at, custom_code, metadata`
+
+// scanLink scans a single link row into a domain.Link, handling JSON metadata deserialization.
+func scanLink(scanner interface{ Scan(dest ...any) error }) (*domain.Link, error) {
+	link := &domain.Link{}
+	var metadataJSON []byte
+
+	err := scanner.Scan(
+		&link.ID,
+		&link.ShortCode,
+		&link.OriginalURL,
+		&link.Title,
+		&link.UserID,
+		&link.CreatedAt,
+		&link.CreatedIP,
+		&link.IsActive,
+		&link.ClickCount,
+		&link.LastClickedAt,
+		&link.CustomCode,
+		&metadataJSON,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(metadataJSON, &link.Metadata); err != nil {
+		return nil, err
+	}
+
+	return link, nil
+}
+
 // Create 创建一个新的链接
 func (r *PostgresLinkRepository) Create(ctx context.Context, link *domain.Link) error {
 	metadataJSON, err := json.Marshal(link.Metadata)
@@ -59,48 +93,22 @@ func (r *PostgresLinkRepository) Create(ctx context.Context, link *domain.Link) 
 		metadataJSON,
 	).Scan(&link.ID, &link.CreatedAt)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // GetByID 根据ID获取链接
 func (r *PostgresLinkRepository) GetByID(ctx context.Context, id int64) (*domain.Link, error) {
 	query := `
-		SELECT id, short_code, original_url, title, user_id, created_at, created_ip,
-		       is_active, click_count, last_clicked_at, custom_code, metadata
+		SELECT ` + linkColumns + `
 		FROM links
 		WHERE id = $1
 	`
 
-	link := &domain.Link{}
-	var metadataJSON []byte
-
-	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&link.ID,
-		&link.ShortCode,
-		&link.OriginalURL,
-		&link.Title,
-		&link.UserID,
-		&link.CreatedAt,
-		&link.CreatedIP,
-		&link.IsActive,
-		&link.ClickCount,
-		&link.LastClickedAt,
-		&link.CustomCode,
-		&metadataJSON,
-	)
-
+	link, err := scanLink(r.pool.QueryRow(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrLinkNotFound
 		}
-		return nil, err
-	}
-
-	if err := json.Unmarshal(metadataJSON, &link.Metadata); err != nil {
 		return nil, err
 	}
 
@@ -110,38 +118,16 @@ func (r *PostgresLinkRepository) GetByID(ctx context.Context, id int64) (*domain
 // GetByShortCode 根据短码获取链接
 func (r *PostgresLinkRepository) GetByShortCode(ctx context.Context, shortCode string) (*domain.Link, error) {
 	query := `
-		SELECT id, short_code, original_url, title, user_id, created_at, created_ip,
-		       is_active, click_count, last_clicked_at, custom_code, metadata
+		SELECT ` + linkColumns + `
 		FROM links
 		WHERE short_code = $1
 	`
 
-	link := &domain.Link{}
-	var metadataJSON []byte
-
-	err := r.pool.QueryRow(ctx, query, shortCode).Scan(
-		&link.ID,
-		&link.ShortCode,
-		&link.OriginalURL,
-		&link.Title,
-		&link.UserID,
-		&link.CreatedAt,
-		&link.CreatedIP,
-		&link.IsActive,
-		&link.ClickCount,
-		&link.LastClickedAt,
-		&link.CustomCode,
-		&metadataJSON,
-	)
-
+	link, err := scanLink(r.pool.QueryRow(ctx, query, shortCode))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrLinkNotFound
 		}
-		return nil, err
-	}
-
-	if err := json.Unmarshal(metadataJSON, &link.Metadata); err != nil {
 		return nil, err
 	}
 
@@ -199,8 +185,7 @@ func (r *PostgresLinkRepository) Delete(ctx context.Context, id int64) error {
 // List 获取链接列表
 func (r *PostgresLinkRepository) List(ctx context.Context, limit, offset int) ([]*domain.Link, error) {
 	query := `
-		SELECT id, short_code, original_url, title, user_id, created_at, created_ip,
-		       is_active, click_count, last_clicked_at, custom_code, metadata
+		SELECT ` + linkColumns + `
 		FROM links
 		ORDER BY created_at DESC
 		LIMIT $1 OFFSET $2
@@ -214,32 +199,10 @@ func (r *PostgresLinkRepository) List(ctx context.Context, limit, offset int) ([
 
 	var links []*domain.Link
 	for rows.Next() {
-		link := &domain.Link{}
-		var metadataJSON []byte
-
-		err := rows.Scan(
-			&link.ID,
-			&link.ShortCode,
-			&link.OriginalURL,
-			&link.Title,
-			&link.UserID,
-			&link.CreatedAt,
-			&link.CreatedIP,
-			&link.IsActive,
-			&link.ClickCount,
-			&link.LastClickedAt,
-			&link.CustomCode,
-			&metadataJSON,
-		)
-
+		link, err := scanLink(rows)
 		if err != nil {
 			return nil, err
 		}
-
-		if err := json.Unmarshal(metadataJSON, &link.Metadata); err != nil {
-			return nil, err
-		}
-
 		links = append(links, link)
 	}
 

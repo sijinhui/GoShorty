@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -35,22 +34,30 @@ func NewAPIHandler(
 
 // getClientIP 从请求中获取客户端IP地址
 func getClientIP(c *gin.Context) string {
-	// 尝试从 X-Forwarded-For 头获取
 	if xff := c.GetHeader("X-Forwarded-For"); xff != "" {
-		// X-Forwarded-For 可能包含多个IP，取第一个
-		ips := strings.Split(xff, ",")
-		if len(ips) > 0 {
-			return strings.TrimSpace(ips[0])
-		}
+		return strings.TrimSpace(strings.SplitN(xff, ",", 2)[0])
 	}
-
-	// 尝试从 X-Real-IP 头获取
 	if xri := c.GetHeader("X-Real-IP"); xri != "" {
 		return xri
 	}
-
-	// 使用 RemoteAddr
 	return c.ClientIP()
+}
+
+// buildShortURL 构建完整的短链接URL
+func buildShortURL(c *gin.Context, shortCode string) string {
+	return "http://" + c.Request.Host + "/" + shortCode
+}
+
+// linkResponse 构建链接创建的响应数据
+func linkResponse(c *gin.Context, link *domain.Link) gin.H {
+	return gin.H{
+		"id":           link.ID,
+		"short_code":   link.ShortCode,
+		"original_url": link.OriginalURL,
+		"short_url":    buildShortURL(c, link.ShortCode),
+		"title":        link.Title,
+		"created_at":   link.CreatedAt,
+	}
 }
 
 // GetDashboardStats 获取仪表盘统计数据
@@ -75,62 +82,36 @@ func (h *APIHandler) CreateLink(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, APIError{
-			Success: false,
-			Error:   "请填写原始链接",
-			Code:    "INVALID_INPUT",
-		})
+		RespondBadRequest(c, "请填写原始链接")
 		return
 	}
 
 	// 计算过期天数
-	expiryDays := 0 // 默认不设置，让插件系统处理
+	expiryDays := 0
 	if req.ExpiresAt != "" {
 		t, err := time.Parse("2006-01-02T15:04", req.ExpiresAt)
 		if err == nil {
-			days := int(time.Until(t).Hours() / 24)
-			if days > 0 {
+			if days := int(time.Until(t).Hours() / 24); days > 0 {
 				expiryDays = days
 			}
 		}
 	}
 
-	// 获取客户端IP
-	clientIP := getClientIP(c)
-
-	// 创建链接请求
-	createReq := &service.CreateLinkRequest{
+	link, err := h.linkService.CreateLink(c.Request.Context(), &service.CreateLinkRequest{
 		URL:        req.OriginalURL,
 		CustomCode: req.ShortCode,
 		Title:      req.Title,
-		UserID:     1, // 简化版本，使用固定用户ID
-		CreatedIP:  clientIP,
+		UserID:     1,
+		CreatedIP:  getClientIP(c),
 		ExpiryDays: expiryDays,
-	}
-
-	// 创建链接
-	link, err := h.linkService.CreateLink(c.Request.Context(), createReq)
+	})
 	if err != nil {
 		h.logger.Error("Failed to create link", zap.Error(err))
 		RespondError(c, err)
 		return
 	}
 
-	// 构建短链接URL
-	baseURL := c.Request.Host
-	shortURL := "http://" + baseURL + "/" + link.ShortCode
-
-	// 返回链接对象
-	response := gin.H{
-		"id":           link.ID,
-		"short_code":   link.ShortCode,
-		"original_url": link.OriginalURL,
-		"short_url":    shortURL,
-		"title":        link.Title,
-		"created_at":   link.CreatedAt,
-	}
-
-	RespondSuccess(c, response, "短链接创建成功")
+	RespondSuccess(c, linkResponse(c, link), "短链接创建成功")
 }
 
 // GetLinks 获取链接列表
@@ -177,18 +158,12 @@ func (h *APIHandler) GetLinks(c *gin.Context) {
 
 // DeleteLink 删除链接
 func (h *APIHandler) DeleteLink(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, APIError{
-			Success: false,
-			Error:   "无效的链接ID",
-			Code:    "INVALID_INPUT",
-		})
+		RespondBadRequest(c, "无效的链接ID")
 		return
 	}
 
-	// 简化版本：使用固定用户ID，实际应该从session获取
 	if err := h.linkService.DeleteLink(c.Request.Context(), id, 1); err != nil {
 		h.logger.Error("Failed to delete link", zap.Error(err))
 		RespondError(c, err)
@@ -200,14 +175,9 @@ func (h *APIHandler) DeleteLink(c *gin.Context) {
 
 // GetLinkAnalytics 获取链接统计数据
 func (h *APIHandler) GetLinkAnalytics(c *gin.Context) {
-	linkIDStr := c.Query("link_id")
-	linkID, err := strconv.ParseInt(linkIDStr, 10, 64)
+	linkID, err := strconv.ParseInt(c.Query("link_id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, APIError{
-			Success: false,
-			Error:   "无效的链接ID",
-			Code:    "INVALID_INPUT",
-		})
+		RespondBadRequest(c, "无效的链接ID")
 		return
 	}
 
@@ -250,47 +220,21 @@ func (h *APIHandler) CreatePublicLink(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, APIError{
-			Success: false,
-			Error:   "请填写原始链接",
-			Code:    "INVALID_INPUT",
-		})
+		RespondBadRequest(c, "请填写原始链接")
 		return
 	}
 
-	// 获取客户端IP
-	clientIP := getClientIP(c)
-
-	// 创建链接请求（公开接口使用默认配置）
-	createReq := &service.CreateLinkRequest{
+	link, err := h.linkService.CreateLink(c.Request.Context(), &service.CreateLinkRequest{
 		URL:        req.OriginalURL,
 		CustomCode: req.ShortCode,
-		Title:      "",
-		UserID:     1, // 公开链接使用默认用户ID
-		CreatedIP:  clientIP,
-		ExpiryDays: 0, // 默认不设置，让插件系统处理
-	}
-
-	// 创建链接
-	link, err := h.linkService.CreateLink(c.Request.Context(), createReq)
+		UserID:     1,
+		CreatedIP:  getClientIP(c),
+	})
 	if err != nil {
 		h.logger.Error("Failed to create public link", zap.Error(err))
 		RespondError(c, err)
 		return
 	}
 
-	// 构建短链接URL
-	baseURL := c.Request.Host
-	shortURL := "http://" + baseURL + "/" + link.ShortCode
-
-	// 返回链接对象
-	response := gin.H{
-		"id":           link.ID,
-		"short_code":   link.ShortCode,
-		"original_url": link.OriginalURL,
-		"short_url":    shortURL,
-		"created_at":   link.CreatedAt,
-	}
-
-	RespondSuccess(c, response, "短链接创建成功")
+	RespondSuccess(c, linkResponse(c, link), "短链接创建成功")
 }

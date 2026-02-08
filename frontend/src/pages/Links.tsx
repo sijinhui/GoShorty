@@ -36,10 +36,6 @@ export default function Links() {
     },
   });
 
-  const handleDelete = (id: number) => {
-    deleteMutation.mutate(id);
-  };
-
   // 创建短码集合，用于快速查找
   const expiryShortCodes = new Set(
     expiryData?.data?.expiries?.map(e => e.short_code) || []
@@ -87,7 +83,7 @@ export default function Links() {
             links={data.data}
             pagination={data.pagination}
             onPageChange={setPage}
-            onDelete={handleDelete}
+            onDelete={(id) => deleteMutation.mutate(id)}
             expiryShortCodes={expiryShortCodes}
             loading={isLoading}
           />

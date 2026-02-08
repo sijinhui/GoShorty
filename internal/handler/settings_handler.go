@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"net/http"
-
 	"GoShorty/internal/domain"
 	"GoShorty/internal/service"
 
@@ -42,27 +40,21 @@ func (h *SettingsHandler) GetSettings(c *gin.Context) {
 // UpdateSettings 更新系统设置
 func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 	var req struct {
-		ShortCodeLength int                      `json:"short_code_length" binding:"required,min=3,max=20"`
+		ShortCodeLength int                     `json:"short_code_length" binding:"required,min=3,max=20"`
 		RateLimit       *domain.RateLimitConfig `json:"rate_limit"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, APIError{
-			Success: false,
-			Error:   "请求参数无效",
-			Code:    "INVALID_INPUT",
-		})
+		RespondBadRequest(c, "请求参数无效")
 		return
 	}
 
-	// 更新短链接长度
 	if err := h.settingsService.UpdateShortCodeLength(c.Request.Context(), req.ShortCodeLength); err != nil {
 		h.logger.Error("Failed to update short code length", zap.Int("length", req.ShortCodeLength), zap.Error(err))
 		RespondError(c, domain.ErrInternalServer)
 		return
 	}
 
-	// 更新速率限制配置（如果提供）
 	if req.RateLimit != nil {
 		if err := h.settingsService.UpdateRateLimitConfig(c.Request.Context(), req.RateLimit); err != nil {
 			h.logger.Error("Failed to update rate limit config", zap.Error(err))

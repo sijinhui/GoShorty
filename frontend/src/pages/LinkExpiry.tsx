@@ -22,15 +22,14 @@ const { Title } = Typography;
 export default function LinkExpiryPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
-  const limit = pageSize;
-  const offset = (page - 1) * limit;
+  const offset = (page - 1) * pageSize;
 
   const queryClient = useQueryClient();
   const [messageApi, contextHolder] = message.useMessage();
 
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['expired-links', page],
-    queryFn: () => getExpiredLinks(limit, offset),
+    queryFn: () => getExpiredLinks(pageSize, offset),
   });
 
   const deleteMutation = useMutation({
@@ -55,14 +54,6 @@ export default function LinkExpiryPage() {
       messageApi.error(error?.error || '批量删除失败');
     },
   });
-
-  const handleDelete = (shortCode: string) => {
-    deleteMutation.mutate(shortCode);
-  };
-
-  const handleDeleteAll = () => {
-    deleteAllMutation.mutate();
-  };
 
   const columns: ColumnsType<LinkExpiry> = [
     {
@@ -114,7 +105,7 @@ export default function LinkExpiryPage() {
         <Popconfirm
           title="确定删除?"
           description={`确定要删除过期记录 ${record.short_code} 吗？`}
-          onConfirm={() => handleDelete(record.short_code)}
+          onConfirm={() => deleteMutation.mutate(record.short_code)}
           okText="删除"
           cancelText="取消"
           okButtonProps={{ danger: true, loading: deleteMutation.isPending }}
@@ -147,15 +138,15 @@ export default function LinkExpiryPage() {
           {total > 0 && (
             <Popconfirm
               title="警告"
-              description="确定要删除所有已过期的记录吗？此操作不可撤销！"
-              onConfirm={handleDeleteAll}
+              description={`确定要删除所有 ${total} 条已过期的记录吗？此操作不可撤销！`}
+              onConfirm={() => deleteAllMutation.mutate()}
               okText="全部删除"
               cancelText="取消"
               icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
               okButtonProps={{ danger: true, loading: deleteAllMutation.isPending }}
             >
               <Button danger type="primary" icon={<DeleteOutlined />}>
-                批量删除全部 ({total})
+                删除所有已过期链接 ({total})
               </Button>
             </Popconfirm>
           )}

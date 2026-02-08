@@ -15,14 +15,6 @@ export interface PluginsResponse {
   plugins: Plugin[];
 }
 
-// 插件配置类型
-export interface PluginConfig {
-  name: string;
-  version: string;
-  enabled: boolean;
-  days?: string;
-}
-
 // 更新插件配置请求类型
 export interface UpdatePluginConfigRequest {
   enabled?: boolean;
@@ -32,11 +24,6 @@ export interface UpdatePluginConfigRequest {
 // 获取所有插件列表
 export const getPlugins = async (): Promise<APIResponse<PluginsResponse>> => {
   return apiClient.get('/plugins');
-};
-
-// 获取插件配置
-export const getPluginConfig = async (name: string): Promise<APIResponse<PluginConfig>> => {
-  return apiClient.get(`/plugins/${name}/config`);
 };
 
 // 更新插件配置

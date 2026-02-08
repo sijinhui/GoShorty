@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { createPublicLink } from '../api/public';
 import { notification } from '../components/AntdStaticMethods';
@@ -14,17 +14,7 @@ export default function Home() {
     short_code: string;
   } | null>(null);
   const [error, setError] = useState('');
-  const [_, setIsTransitioning] = useState(false);
   const { theme, toggleTheme } = useThemeStore();
-
-  // 监听主题变化，在动画期间隐藏网格
-  useEffect(() => {
-    setIsTransitioning(true);
-    const timer = setTimeout(() => {
-      setIsTransitioning(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [theme]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

@@ -9,7 +9,6 @@ interface AuthState {
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
-  setLoading: (loading: boolean) => void;
   clearError: () => void;
 }
 
@@ -54,10 +53,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       set({ isAuthenticated: false, isLoading: false });
     }
-  },
-
-  setLoading: (loading: boolean) => {
-    set({ isLoading: loading });
   },
 
   clearError: () => {

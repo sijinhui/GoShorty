@@ -98,17 +98,18 @@ export const useThemeStore = create<ThemeState>()(
 );
 
 // 初始化主题
-export const initTheme = () => {
+export function initTheme(): void {
+  let theme = 'light';
   const storedTheme = localStorage.getItem('theme-storage');
   if (storedTheme) {
     try {
       const { state } = JSON.parse(storedTheme);
-      const theme = state?.theme || 'light';
-      document.documentElement.setAttribute('data-theme', theme);
-    } catch (e) {
-      document.documentElement.setAttribute('data-theme', 'light');
+      if (state?.theme) {
+        theme = state.theme;
+      }
+    } catch {
+      // Ignore parse errors, use default
     }
-  } else {
-    document.documentElement.setAttribute('data-theme', 'light');
   }
-};
+  document.documentElement.setAttribute('data-theme', theme);
+}

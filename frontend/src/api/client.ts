@@ -1,7 +1,6 @@
 import axios from 'axios';
 import type { APIError } from '../types/api';
 
-// 创建axios实例
 const apiClient = axios.create({
   baseURL: '/admin/api',
   timeout: 10000,
@@ -11,21 +10,9 @@ const apiClient = axios.create({
   },
 });
 
-// 请求拦截器
-apiClient.interceptors.request.use(
-  (config) => {
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
 // 响应拦截器
 apiClient.interceptors.response.use(
-  (response) => {
-    return response.data;
-  },
+  (response) => response.data,
   (error) => {
     if (error.response) {
       const apiError: APIError = error.response.data;

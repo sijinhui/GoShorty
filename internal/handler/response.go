@@ -43,6 +43,7 @@ type PaginationMeta struct {
 var errorCodeMap = map[error]string{
 	domain.ErrLinkNotFound:       "LINK_NOT_FOUND",
 	domain.ErrLinkExpired:        "LINK_EXPIRED",
+	domain.ErrLinkNotExpired:     "LINK_NOT_EXPIRED",
 	domain.ErrLinkInactive:       "LINK_INACTIVE",
 	domain.ErrShortCodeExists:    "SHORT_CODE_EXISTS",
 	domain.ErrInvalidShortCode:   "INVALID_SHORT_CODE",
@@ -61,6 +62,7 @@ var errorCodeMap = map[error]string{
 var errorStatusMap = map[error]int{
 	domain.ErrLinkNotFound:       http.StatusNotFound,
 	domain.ErrLinkExpired:        http.StatusGone,
+	domain.ErrLinkNotExpired:     http.StatusBadRequest,
 	domain.ErrLinkInactive:       http.StatusGone,
 	domain.ErrShortCodeExists:    http.StatusConflict,
 	domain.ErrInvalidShortCode:   http.StatusBadRequest,
@@ -91,6 +93,15 @@ func RespondError(c *gin.Context, err error) {
 		Success: false,
 		Error:   err.Error(),
 		Code:    code,
+	})
+}
+
+// RespondBadRequest 统一400错误响应处理
+func RespondBadRequest(c *gin.Context, message string) {
+	c.JSON(http.StatusBadRequest, APIError{
+		Success: false,
+		Error:   message,
+		Code:    "INVALID_INPUT",
 	})
 }
 

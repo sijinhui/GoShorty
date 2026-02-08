@@ -10,11 +10,11 @@ export default function Sidebar({ onLogout }: SidebarProps) {
   const { theme, toggleTheme } = useThemeStore();
 
   const menuItems = [
-    { path: '/admin/dashboard', label: '📊 仪表盘', icon: '📊' },
-    { path: '/admin/links', label: '🔗 链接管理', icon: '🔗' },
-    { path: '/admin/analytics', label: '📈 统计分析', icon: '📈' },
-    { path: '/admin/link-expiry', label: '⏰ 过期管理', icon: '⏰' },
-    { path: '/admin/settings', label: '⚙️ 系统设置', icon: '⚙️' },
+    { path: '/admin/dashboard', label: '📊 仪表盘' },
+    { path: '/admin/links', label: '🔗 链接管理' },
+    { path: '/admin/analytics', label: '📈 统计分析' },
+    { path: '/admin/link-expiry', label: '⏰ 过期管理' },
+    { path: '/admin/settings', label: '⚙️ 系统设置' },
   ];
 
   return (

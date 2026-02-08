@@ -126,7 +126,6 @@ func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*
 				break
 			}
 		}
-		isCustom = false
 	}
 
 	// 创建链接对象

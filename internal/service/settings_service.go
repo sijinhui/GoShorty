@@ -199,11 +199,7 @@ func (s *settingsService) GetRateLimitConfig(ctx context.Context) (*domain.RateL
 
 // UpdateRateLimitConfig 更新速率限制配置
 func (s *settingsService) UpdateRateLimitConfig(ctx context.Context, config *domain.RateLimitConfig) error {
-	// 更新启用状态
-	enabledValue := "false"
-	if config.Enabled {
-		enabledValue = "true"
-	}
+	enabledValue := strconv.FormatBool(config.Enabled)
 	if err := s.settingsRepo.Update(ctx, "rate_limit.enabled", enabledValue); err != nil {
 		s.logger.Error("failed to update rate_limit.enabled", zap.Error(err))
 		return err

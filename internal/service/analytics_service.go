@@ -72,12 +72,7 @@ func (s *analyticsService) RecordAccess(ctx context.Context, linkID int64, ipAdd
 	}
 
 	// 保存到数据库
-	if err := s.analyticsRepo.CreateAccessLog(ctx, log); err != nil {
-		s.logger.Error("Failed to create access log", zap.Error(err))
-		return err
-	}
-
-	return nil
+	return s.analyticsRepo.CreateAccessLog(ctx, log)
 }
 
 // GetAccessLogs 获取访问日志列表

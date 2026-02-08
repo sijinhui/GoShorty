@@ -30,6 +30,25 @@ func NewPostgresLinkExpiryRepository(pool *pgxpool.Pool) *PostgresLinkExpiryRepo
 	return &PostgresLinkExpiryRepository{pool: pool}
 }
 
+// expiryColumns is the standard column list for link_expiry queries.
+const expiryColumns = `id, short_code, lifecycle_days, created_at, expires_at`
+
+// scanExpiry scans a single link_expiry row into a domain.LinkExpiry.
+func scanExpiry(scanner interface{ Scan(dest ...any) error }) (*domain.LinkExpiry, error) {
+	expiry := &domain.LinkExpiry{}
+	err := scanner.Scan(
+		&expiry.ID,
+		&expiry.ShortCode,
+		&expiry.LifecycleDays,
+		&expiry.CreatedAt,
+		&expiry.ExpiresAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return expiry, nil
+}
+
 // Create 创建链接过期记录
 func (r *PostgresLinkExpiryRepository) Create(ctx context.Context, expiry *domain.LinkExpiry) error {
 	query := `
@@ -50,25 +69,11 @@ func (r *PostgresLinkExpiryRepository) Create(ctx context.Context, expiry *domai
 // GetByShortCode 根据短码获取过期信息
 func (r *PostgresLinkExpiryRepository) GetByShortCode(ctx context.Context, shortCode string) (*domain.LinkExpiry, error) {
 	query := `
-		SELECT id, short_code, lifecycle_days, created_at, expires_at
+		SELECT ` + expiryColumns + `
 		FROM link_expiry
 		WHERE short_code = $1
 	`
-
-	expiry := &domain.LinkExpiry{}
-	err := r.pool.QueryRow(ctx, query, shortCode).Scan(
-		&expiry.ID,
-		&expiry.ShortCode,
-		&expiry.LifecycleDays,
-		&expiry.CreatedAt,
-		&expiry.ExpiresAt,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return expiry, nil
+	return scanExpiry(r.pool.QueryRow(ctx, query, shortCode))
 }
 
 // Update 更新过期信息
@@ -116,48 +121,30 @@ func (r *PostgresLinkExpiryRepository) DeleteExpired(ctx context.Context) (int64
 // ListExpiring 列出即将过期的链接
 func (r *PostgresLinkExpiryRepository) ListExpiring(ctx context.Context, limit int) ([]*domain.LinkExpiry, error) {
 	query := `
-		SELECT id, short_code, lifecycle_days, created_at, expires_at
+		SELECT ` + expiryColumns + `
 		FROM link_expiry
 		WHERE expires_at > NOW()
 		ORDER BY expires_at ASC
 		LIMIT $1
 	`
-
-	rows, err := r.pool.Query(ctx, query, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var expiries []*domain.LinkExpiry
-	for rows.Next() {
-		expiry := &domain.LinkExpiry{}
-		err := rows.Scan(
-			&expiry.ID,
-			&expiry.ShortCode,
-			&expiry.LifecycleDays,
-			&expiry.CreatedAt,
-			&expiry.ExpiresAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		expiries = append(expiries, expiry)
-	}
-
-	return expiries, rows.Err()
+	return r.scanExpiryRows(ctx, query, limit)
 }
 
 // ListExpired 列出已过期的链接
 func (r *PostgresLinkExpiryRepository) ListExpired(ctx context.Context, limit, offset int) ([]*domain.LinkExpiry, error) {
 	query := `
-		SELECT id, short_code, lifecycle_days, created_at, expires_at
+		SELECT ` + expiryColumns + `
 		FROM link_expiry
+		WHERE expires_at < NOW()
 		ORDER BY expires_at DESC
 		LIMIT $1 OFFSET $2
 	`
+	return r.scanExpiryRows(ctx, query, limit, offset)
+}
 
-	rows, err := r.pool.Query(ctx, query, limit, offset)
+// scanExpiryRows executes a query and scans all resulting rows into LinkExpiry slices.
+func (r *PostgresLinkExpiryRepository) scanExpiryRows(ctx context.Context, query string, args ...any) ([]*domain.LinkExpiry, error) {
+	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -165,14 +152,7 @@ func (r *PostgresLinkExpiryRepository) ListExpired(ctx context.Context, limit, o
 
 	var expiries []*domain.LinkExpiry
 	for rows.Next() {
-		expiry := &domain.LinkExpiry{}
-		err := rows.Scan(
-			&expiry.ID,
-			&expiry.ShortCode,
-			&expiry.LifecycleDays,
-			&expiry.CreatedAt,
-			&expiry.ExpiresAt,
-		)
+		expiry, err := scanExpiry(rows)
 		if err != nil {
 			return nil, err
 		}

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"GoShorty/internal/domain"
 	"GoShorty/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -53,20 +54,12 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 
 // handleAuthFailure 处理认证失败的情况
 func (m *AuthMiddleware) handleAuthFailure(c *gin.Context) {
-	// 判断是否为API请求
 	if strings.HasPrefix(c.Request.URL.Path, "/admin/api/") {
-		// API请求返回JSON
-		c.JSON(http.StatusUnauthorized, APIError{
-			Success: false,
-			Error:   "未授权访问",
-			Code:    "UNAUTHORIZED",
-		})
-		c.Abort()
+		RespondError(c, domain.ErrUnauthorized)
 	} else {
-		// 页面请求重定向到登录页
 		c.Redirect(http.StatusFound, "/admin/login")
-		c.Abort()
 	}
+	c.Abort()
 }
 
 // RateLimitMiddleware 速率限制中间件
@@ -86,20 +79,16 @@ func NewRateLimitMiddleware(rateLimitService service.RateLimitService, logger *z
 // RateLimit 速率限制中间件处理函数
 func (m *RateLimitMiddleware) RateLimit(endpoint string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 获取客户端IP
 		clientIP := getClientIP(c)
 
-		// 检查速率限制
 		allowed, err := m.rateLimitService.CheckRateLimit(c.Request.Context(), clientIP, endpoint)
 		if err != nil {
 			m.logger.Error("rate limit check failed", zap.Error(err))
-			// 出错时允许请求继续
 			c.Next()
 			return
 		}
 
 		if !allowed {
-			// 超过速率限制
 			c.JSON(http.StatusTooManyRequests, APIError{
 				Success: false,
 				Error:   "请求过于频繁，请稍后再试",
