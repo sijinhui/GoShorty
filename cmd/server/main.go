@@ -71,27 +71,39 @@ func main() {
 
 	// 注册7天过期插件
 	expiryPlugin := expiration.NewSevenDayExpiryPlugin()
+	logger.Info("Created expiry plugin with default settings",
+		zap.Bool("enabled", expiryPlugin.Enabled()),
+		zap.String("name", expiryPlugin.Name()),
+	)
 
 	// 从数据库加载插件配置
 	ctx := context.Background()
 	if enabled, err := settingsService.GetPluginEnabled(ctx, "seven_day_expiry"); err == nil {
 		expiryPlugin.SetEnabled(enabled)
-		logger.Info("Loaded plugin enabled status", zap.Bool("enabled", enabled))
+		logger.Info("Loaded plugin enabled status from database", zap.Bool("enabled", enabled))
 	} else {
-		logger.Warn("Failed to load plugin enabled status, using default", zap.Error(err))
+		// 数据库中没有配置时，保持插件的默认启用状态
+		logger.Info("No plugin enabled config in database, keeping default enabled status",
+			zap.Bool("enabled", expiryPlugin.Enabled()),
+			zap.Error(err),
+		)
 	}
 
 	if daysStr, err := settingsService.GetPluginConfig(ctx, "seven_day_expiry", "days"); err == nil {
 		if days, err := strconv.Atoi(daysStr); err == nil && days > 0 {
 			expiryPlugin.SetDays(days)
-			logger.Info("Loaded plugin expiry days", zap.Int("days", days))
+			logger.Info("Loaded plugin expiry days from database", zap.Int("days", days))
 		}
 	} else {
-		logger.Warn("Failed to load plugin expiry days, using default", zap.Error(err))
+		logger.Info("No plugin days config in database, using default 7 days", zap.Error(err))
 	}
 
 	if err := pluginManager.Register(expiryPlugin); err != nil {
-		logger.Warn("Failed to register expiry plugin", zap.Error(err))
+		logger.Error("Failed to register expiry plugin", zap.Error(err))
+	} else {
+		logger.Info("Expiry plugin registered successfully",
+			zap.Bool("enabled", expiryPlugin.Enabled()),
+		)
 	}
 
 	// 从数据库获取短链接长度配置
@@ -104,7 +116,7 @@ func main() {
 
 	codeGenerator := service.NewBase62Generator(shortCodeLength)
 	linkService := service.NewLinkService(linkRepo, linkExpiryRepo, codeGenerator, hooks, logger)
-	linkExpiryService := service.NewLinkExpiryService(linkExpiryRepo, logger)
+	linkExpiryService := service.NewLinkExpiryService(linkExpiryRepo, linkRepo, logger)
 	authService := service.NewAuthService(userRepo, sessionRepo, cfg.Session.MaxAge, logger)
 	geoResolver := geolocation.NewSimpleGeoIPResolver()
 	analyticsService := service.NewAnalyticsService(analyticsRepo, geoResolver, logger)
@@ -163,6 +175,7 @@ func main() {
 			api.GET("/link-expiry", linkExpiryHandler.HandleListExpired)
 			api.DELETE("/link-expiry/:shortCode", linkExpiryHandler.HandleDeleteExpired)
 			api.DELETE("/link-expiry/batch/all", linkExpiryHandler.HandleDeleteAllExpired)
+			api.POST("/link-expiry/:shortCode/cancel", linkExpiryHandler.HandleCancelExpiry)
 		}
 	}
 

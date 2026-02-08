@@ -93,3 +93,23 @@ func (h *LinkExpiryHandler) HandleDeleteAllExpired(c *gin.Context) {
 		"deleted_count": count,
 	}, "批量删除成功")
 }
+
+// HandleCancelExpiry 取消链接的过期设置
+func (h *LinkExpiryHandler) HandleCancelExpiry(c *gin.Context) {
+	shortCode := c.Param("shortCode")
+	if shortCode == "" {
+		RespondBadRequest(c, "短码不能为空")
+		return
+	}
+
+	if err := h.linkExpiryService.CancelExpiry(c.Request.Context(), shortCode); err != nil {
+		h.logger.Error("failed to cancel expiry",
+			zap.String("short_code", shortCode),
+			zap.Error(err),
+		)
+		RespondError(c, err)
+		return
+	}
+
+	RespondSuccess(c, nil, "已取消过期设置")
+}

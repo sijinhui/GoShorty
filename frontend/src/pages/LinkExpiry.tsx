@@ -11,8 +11,8 @@ import {
   message,
   Tooltip
 } from 'antd';
-import { DeleteOutlined, ExclamationCircleOutlined, ReloadOutlined } from '@ant-design/icons';
-import { getExpiredLinks, deleteExpiredLink, deleteAllExpiredLinks } from '../api/linkExpiry';
+import { DeleteOutlined, ExclamationCircleOutlined, ReloadOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { getExpiredLinks, deleteExpiredLink, deleteAllExpiredLinks, cancelExpiry } from '../api/linkExpiry';
 import type { LinkExpiry } from '../api/linkExpiry';
 import type { ColumnsType } from 'antd/es/table';
 import type { APIError } from '../types/api';
@@ -35,8 +35,9 @@ export default function LinkExpiryPage() {
   const deleteMutation = useMutation({
     mutationFn: deleteExpiredLink,
     onSuccess: () => {
-      messageApi.success('删除成功');
+      messageApi.success('链接已删除');
       queryClient.invalidateQueries({ queryKey: ['expired-links'] });
+      queryClient.invalidateQueries({ queryKey: ['links'] });
     },
     onError: (error: APIError) => {
       messageApi.error(error?.error || '删除失败');
@@ -46,12 +47,24 @@ export default function LinkExpiryPage() {
   const deleteAllMutation = useMutation({
     mutationFn: deleteAllExpiredLinks,
     onSuccess: (result) => {
-      messageApi.success(`成功删除 ${result.data?.deleted_count || 0} 条过期记录`);
-      setPage(1); // Reset to first page after bulk delete
+      messageApi.success(`成功删除 ${result.data?.deleted_count || 0} 条过期链接`);
+      setPage(1);
       queryClient.invalidateQueries({ queryKey: ['expired-links'] });
+      queryClient.invalidateQueries({ queryKey: ['links'] });
     },
     onError: (error: APIError) => {
       messageApi.error(error?.error || '批量删除失败');
+    },
+  });
+
+  const cancelExpiryMutation = useMutation({
+    mutationFn: cancelExpiry,
+    onSuccess: () => {
+      messageApi.success('已取消过期设置，链接将永不过期');
+      queryClient.invalidateQueries({ queryKey: ['expired-links'] });
+    },
+    onError: (error: APIError) => {
+      messageApi.error(error?.error || '取消过期失败');
     },
   });
 
@@ -102,18 +115,32 @@ export default function LinkExpiryPage() {
       key: 'action',
       align: 'right',
       render: (_, record) => (
-        <Popconfirm
-          title="确定删除?"
-          description={`确定要删除过期记录 ${record.short_code} 吗？`}
-          onConfirm={() => deleteMutation.mutate(record.short_code)}
-          okText="删除"
-          cancelText="取消"
-          okButtonProps={{ danger: true, loading: deleteMutation.isPending }}
-        >
-          <Button type="link" danger size="small" icon={<DeleteOutlined />}>
-            删除
-          </Button>
-        </Popconfirm>
+        <Space size="small">
+          <Popconfirm
+            title="取消过期"
+            description={`取消 ${record.short_code} 的过期设置？链接将永不过期。`}
+            onConfirm={() => cancelExpiryMutation.mutate(record.short_code)}
+            okText="确定"
+            cancelText="取消"
+            okButtonProps={{ loading: cancelExpiryMutation.isPending }}
+          >
+            <Button type="link" size="small" icon={<CloseCircleOutlined />}>
+              取消过期
+            </Button>
+          </Popconfirm>
+          <Popconfirm
+            title="删除链接"
+            description={`确定要删除链接 ${record.short_code} 吗？此操作将同时删除链接本身！`}
+            onConfirm={() => deleteMutation.mutate(record.short_code)}
+            okText="删除"
+            cancelText="取消"
+            okButtonProps={{ danger: true, loading: deleteMutation.isPending }}
+          >
+            <Button type="link" danger size="small" icon={<DeleteOutlined />}>
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -138,7 +165,7 @@ export default function LinkExpiryPage() {
           {total > 0 && (
             <Popconfirm
               title="警告"
-              description={`确定要删除所有 ${total} 条已过期的记录吗？此操作不可撤销！`}
+              description={`确定要删除所有 ${total} 条已过期的链接吗？此操作将同时删除链接本身，不可撤销！`}
               onConfirm={() => deleteAllMutation.mutate()}
               okText="全部删除"
               cancelText="取消"
