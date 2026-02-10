@@ -1,13 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSettings, updateSettings } from '../api/settings';
 import { getPlugins, updatePluginConfig } from '../api/plugins';
+import { exportLinks, importLinks } from '../api/links';
 
 export default function Settings() {
   const queryClient = useQueryClient();
   const [shortCodeLength, setShortCodeLength] = useState<number>(3);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [pluginSuccessMessage, setPluginSuccessMessage] = useState<string>('');
+  const [importMessage, setImportMessage] = useState<string>('');
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 速率限制配置状态
   const [rateLimitEnabled, setRateLimitEnabled] = useState<boolean>(false);
@@ -75,6 +79,25 @@ export default function Settings() {
     },
   });
 
+  const importMutation = useMutation({
+    mutationFn: importLinks,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['links'] });
+      setImportMessage(data.message || '导入完成');
+      if (data.data?.errors) {
+        setImportErrors(data.data.errors);
+      }
+      setTimeout(() => {
+        setImportMessage('');
+        setImportErrors([]);
+      }, 10000);
+    },
+    onError: (error: any) => {
+      setImportMessage(error?.error || '导入失败');
+      setTimeout(() => setImportMessage(''), 5000);
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSuccessMessage('');
@@ -115,6 +138,45 @@ export default function Settings() {
         days: config.days,
       },
     });
+  };
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportLinks();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `links_export_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setSuccessMessage('导出成功');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error: any) {
+      setSuccessMessage('导出失败：' + (error?.error || '未知错误'));
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      setImportMessage('请选择CSV文件');
+      setTimeout(() => setImportMessage(''), 3000);
+      return;
+    }
+
+    setImportMessage('');
+    setImportErrors([]);
+    importMutation.mutate(file);
+
+    // 重置文件输入
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   if (isLoading || pluginsLoading) {
@@ -520,6 +582,7 @@ export default function Settings() {
         borderRadius: '12px',
         boxShadow: 'var(--shadow-md)',
         border: '1px solid var(--border-subtle)',
+        marginBottom: '2rem',
         animation: 'fadeIn 0.5s ease-out 0.3s backwards',
       }}>
         <h2 style={{
@@ -714,6 +777,155 @@ export default function Settings() {
             fontFamily: 'var(--font-body)',
           }}>暂无可用插件</p>
         )}
+      </div>
+
+      {/* 数据导入导出 */}
+      <div style={{
+        background: 'var(--bg-elevated)',
+        padding: '1.75rem',
+        borderRadius: '12px',
+        boxShadow: 'var(--shadow-md)',
+        border: '1px solid var(--border-subtle)',
+        animation: 'fadeIn 0.5s ease-out 0.4s backwards',
+      }}>
+        <h2 style={{
+          fontSize: '1.25rem',
+          fontWeight: '800',
+          fontFamily: 'var(--font-heading)',
+          marginBottom: '1.25rem',
+          color: 'var(--text-primary)',
+          letterSpacing: '-0.01em',
+        }}>
+          数据导入导出
+        </h2>
+
+        {importMessage && (
+          <div style={{
+            background: importMutation.isError ? 'rgba(184, 122, 122, 0.15)' : 'rgba(107, 142, 127, 0.15)',
+            color: importMutation.isError ? 'var(--error)' : 'var(--success)',
+            padding: '1rem',
+            borderRadius: '10px',
+            marginBottom: '1.5rem',
+            border: '1px solid',
+            borderColor: importMutation.isError ? 'var(--error)' : 'var(--success)',
+            fontFamily: 'var(--font-body)',
+            animation: 'fadeIn 0.3s ease-out',
+          }}>
+            {importMessage}
+            {importErrors.length > 0 && (
+              <ul style={{
+                marginTop: '0.75rem',
+                marginLeft: '1.25rem',
+                fontSize: '0.875rem',
+              }}>
+                {importErrors.map((error, index) => (
+                  <li key={index} style={{ marginBottom: '0.25rem' }}>{error}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        <div style={{
+          display: 'flex',
+          gap: '1rem',
+          flexWrap: 'wrap',
+        }}>
+          <button
+            onClick={handleExport}
+            style={{
+              background: 'var(--accent-primary)',
+              color: '#ffffff',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              border: '1px solid var(--accent-primary)',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              fontWeight: '600',
+              fontFamily: 'var(--font-body)',
+              transition: 'all var(--transition-base)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <span>📥</span>
+            导出CSV
+          </button>
+
+          <label style={{
+            background: 'var(--success)',
+            color: 'var(--text-primary)',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '8px',
+            border: '1px solid var(--success)',
+            cursor: importMutation.isPending ? 'not-allowed' : 'pointer',
+            fontSize: '1rem',
+            fontWeight: '600',
+            fontFamily: 'var(--font-body)',
+            transition: 'all var(--transition-base)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            opacity: importMutation.isPending ? 0.6 : 1,
+          }}>
+            <span>📤</span>
+            {importMutation.isPending ? '导入中...' : '导入CSV'}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleImport}
+              disabled={importMutation.isPending}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
+
+        <div style={{
+          marginTop: '1.25rem',
+          padding: '1rem',
+          background: 'var(--bg-secondary)',
+          borderRadius: '8px',
+          border: '1px solid var(--border-subtle)',
+        }}>
+          <h3 style={{
+            fontSize: '0.875rem',
+            fontWeight: '700',
+            marginBottom: '0.625rem',
+            fontFamily: 'var(--font-heading)',
+            color: 'var(--text-primary)',
+          }}>
+            CSV 格式说明
+          </h3>
+          <p style={{
+            fontSize: '0.875rem',
+            color: 'var(--text-secondary)',
+            fontFamily: 'var(--font-body)',
+            marginBottom: '0.5rem',
+          }}>
+            CSV 文件应包含以下列（表头）：
+          </p>
+          <ul style={{
+            fontSize: '0.875rem',
+            color: 'var(--text-secondary)',
+            fontFamily: 'var(--font-mono)',
+            marginLeft: '1.25rem',
+            lineHeight: '1.6',
+          }}>
+            <li><strong>source</strong>: 短码（必填）</li>
+            <li><strong>target</strong>: 目标URL（必填）</li>
+            <li><strong>hits</strong>: 点击次数（可选，导入时忽略）</li>
+          </ul>
+          <p style={{
+            fontSize: '0.875rem',
+            color: 'var(--text-tertiary)',
+            fontFamily: 'var(--font-body)',
+            marginTop: '0.75rem',
+          }}>
+            注意：导入时如果短码已存在，该条记录将被跳过。
+          </p>
+        </div>
       </div>
     </div>
   );

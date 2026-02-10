@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/csv"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -303,4 +305,141 @@ func (h *APIHandler) CreatePublicLink(c *gin.Context) {
 	}
 
 	RespondSuccess(c, linkResponse(c, link), "短链接创建成功")
+}
+
+// ExportLinks 导出所有链接为CSV
+func (h *APIHandler) ExportLinks(c *gin.Context) {
+	links, err := h.linkService.ListLinks(c.Request.Context(), 0, 0)
+	if err != nil {
+		h.logger.Error("Failed to get links for export", zap.Error(err))
+		RespondError(c, domain.ErrInternalServer)
+		return
+	}
+
+	// 设置响应头
+	c.Writer.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=links_export_%s.csv", time.Now().Format("20060102_150405")))
+	c.Writer.WriteHeader(200)
+
+	// 写入UTF-8 BOM以支持Excel正确显示中文
+	c.Writer.Write([]byte{0xEF, 0xBB, 0xBF})
+
+	// 创建CSV writer
+	writer := csv.NewWriter(c.Writer)
+	defer writer.Flush()
+
+	// 写入表头
+	if err := writer.Write([]string{"source", "target", "hits"}); err != nil {
+		h.logger.Error("Failed to write CSV header", zap.Error(err))
+		return
+	}
+
+	// 写入数据
+	for _, link := range links {
+		record := []string{
+			link.ShortCode,
+			link.OriginalURL,
+			strconv.Itoa(link.ClickCount),
+		}
+		if err := writer.Write(record); err != nil {
+			h.logger.Error("Failed to write CSV record", zap.Error(err))
+			return
+		}
+	}
+}
+
+// ImportLinks 从CSV导入链接
+func (h *APIHandler) ImportLinks(c *gin.Context) {
+	file, _, err := c.Request.FormFile("file")
+	if err != nil {
+		RespondBadRequest(c, "请上传CSV文件")
+		return
+	}
+	defer file.Close()
+
+	// 解析CSV
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		h.logger.Error("Failed to read CSV file", zap.Error(err))
+		RespondBadRequest(c, "CSV文件格式错误")
+		return
+	}
+
+	if len(records) < 2 {
+		RespondBadRequest(c, "CSV文件为空或格式不正确")
+		return
+	}
+
+	// 验证表头
+	header := records[0]
+	if len(header) < 2 || header[0] != "source" || header[1] != "target" {
+		RespondBadRequest(c, "CSV表头格式不正确，应为: source,target,hits")
+		return
+	}
+
+	// 导入统计
+	successCount := 0
+	failCount := 0
+	var errors []string
+
+	// 跳过表头，处理数据行
+	for i, record := range records[1:] {
+		if len(record) < 2 {
+			failCount++
+			errors = append(errors, fmt.Sprintf("第%d行: 数据不完整", i+2))
+			continue
+		}
+
+		shortCode := strings.TrimSpace(record[0])
+		originalURL := strings.TrimSpace(record[1])
+
+		if shortCode == "" || originalURL == "" {
+			failCount++
+			errors = append(errors, fmt.Sprintf("第%d行: 短码或URL为空", i+2))
+			continue
+		}
+
+		// 创建链接
+		_, err := h.linkService.CreateLink(c.Request.Context(), &service.CreateLinkRequest{
+			URL:        originalURL,
+			CustomCode: shortCode,
+			UserID:     1,
+			CreatedIP:  getClientIP(c),
+		})
+
+		if err != nil {
+			failCount++
+			errMsg := err.Error()
+			if err == domain.ErrShortCodeExists {
+				errMsg = "短码已存在"
+			} else if err == domain.ErrInvalidURL {
+				errMsg = "URL格式无效"
+			} else if err == domain.ErrInvalidShortCode {
+				errMsg = "短码格式无效"
+			}
+			errors = append(errors, fmt.Sprintf("第%d行 (%s): %s", i+2, shortCode, errMsg))
+		} else {
+			successCount++
+		}
+	}
+
+	// 返回导入结果
+	result := gin.H{
+		"success_count": successCount,
+		"fail_count":    failCount,
+		"total":         len(records) - 1,
+	}
+
+	if len(errors) > 0 {
+		// 只返回前10个错误，避免响应过大
+		if len(errors) > 10 {
+			result["errors"] = append(errors[:10], fmt.Sprintf("...还有%d个错误", len(errors)-10))
+		} else {
+			result["errors"] = errors
+		}
+	}
+
+	message := fmt.Sprintf("导入完成：成功 %d 条，失败 %d 条", successCount, failCount)
+	RespondSuccess(c, result, message)
 }

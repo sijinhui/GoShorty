@@ -164,6 +164,8 @@ func main() {
 			api.GET("/dashboard/stats", apiHandler.GetDashboardStats)
 			api.POST("/links", apiHandler.CreateLink)
 			api.GET("/links", apiHandler.GetLinks)
+			api.GET("/links/export", apiHandler.ExportLinks)
+			api.POST("/links/import", apiHandler.ImportLinks)
 			api.DELETE("/links/:id", apiHandler.DeleteLink)
 			api.GET("/links/:shortCode/analytics", apiHandler.GetLinkAnalyticsByShortCode)
 			api.GET("/analytics/link", apiHandler.GetLinkAnalytics)

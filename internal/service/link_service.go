@@ -337,6 +337,10 @@ func (s *linkService) DeleteLink(ctx context.Context, id int64, userID int) erro
 
 // ListLinks 获取链接列表
 func (s *linkService) ListLinks(ctx context.Context, limit, offset int) ([]*domain.Link, error) {
+	// 如果 limit 为 0，获取所有链接
+	if limit == 0 {
+		return s.linkRepo.ListAll(ctx)
+	}
 	return s.linkRepo.List(ctx, limit, offset)
 }
 

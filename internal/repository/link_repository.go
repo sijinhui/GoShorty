@@ -21,6 +21,7 @@ type LinkRepository interface {
 	Delete(ctx context.Context, id int64) error
 	DeleteByShortCodes(ctx context.Context, shortCodes []string) (int64, error)
 	List(ctx context.Context, limit, offset int) ([]*domain.Link, error)
+	ListAll(ctx context.Context) ([]*domain.Link, error)
 	IncrementClickCount(ctx context.Context, id int64) error
 	DeleteExpired(ctx context.Context, before time.Time) error
 	ExistsShortCode(ctx context.Context, shortCode string) (bool, error)
@@ -193,6 +194,32 @@ func (r *PostgresLinkRepository) List(ctx context.Context, limit, offset int) ([
 	`
 
 	rows, err := r.pool.Query(ctx, query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var links []*domain.Link
+	for rows.Next() {
+		link, err := scanLink(rows)
+		if err != nil {
+			return nil, err
+		}
+		links = append(links, link)
+	}
+
+	return links, rows.Err()
+}
+
+// ListAll 获取所有链接（用于导出）
+func (r *PostgresLinkRepository) ListAll(ctx context.Context) ([]*domain.Link, error) {
+	query := `
+		SELECT ` + linkColumns + `
+		FROM links
+		ORDER BY created_at DESC
+	`
+
+	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
