@@ -5,23 +5,10 @@ services:
     build: .
     container_name: goshorty
     image: hub.xiaosi.cc/ghcr.io/sijinhui/goshorty
-    environment:
-      SERVER_HOST: 0.0.0.0
-      SERVER_PORT: 8800
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: goshorty
-      DB_PASSWORD: goshorty
-      DB_NAME: goshorty
-      DB_SSLMODE: disable
-      SESSION_SECRET: change-this-secret-key
-      SESSION_MAX_AGE: 86400
-      LOG_LEVEL: info
+    env_file:
+      - ".env"
     ports:
       - "8800:8800"
-    depends_on:
-      postgres:
-        condition: service_healthy
     restart: unless-stopped
 
 #  postgres:
