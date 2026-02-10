@@ -392,6 +392,8 @@ func (h *APIHandler) ImportLinks(c *gin.Context) {
 		}
 
 		shortCode := strings.TrimSpace(record[0])
+		// 兼容带斜杠的短码格式，如 /NHj/
+		shortCode = strings.Trim(shortCode, "/")
 		originalURL := strings.TrimSpace(record[1])
 
 		if shortCode == "" || originalURL == "" {
@@ -432,12 +434,8 @@ func (h *APIHandler) ImportLinks(c *gin.Context) {
 	}
 
 	if len(errors) > 0 {
-		// 只返回前10个错误，避免响应过大
-		if len(errors) > 10 {
-			result["errors"] = append(errors[:10], fmt.Sprintf("...还有%d个错误", len(errors)-10))
-		} else {
-			result["errors"] = errors
-		}
+		// 返回所有错误信息
+		result["errors"] = errors
 	}
 
 	message := fmt.Sprintf("导入完成：成功 %d 条，失败 %d 条", successCount, failCount)

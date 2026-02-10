@@ -87,14 +87,9 @@ export default function Settings() {
       if (data.data?.errors) {
         setImportErrors(data.data.errors);
       }
-      setTimeout(() => {
-        setImportMessage('');
-        setImportErrors([]);
-      }, 10000);
     },
     onError: (error: any) => {
       setImportMessage(error?.error || '导入失败');
-      setTimeout(() => setImportMessage(''), 5000);
     },
   });
 
@@ -810,18 +805,63 @@ export default function Settings() {
             borderColor: importMutation.isError ? 'var(--error)' : 'var(--success)',
             fontFamily: 'var(--font-body)',
             animation: 'fadeIn 0.3s ease-out',
+            position: 'relative',
           }}>
+            <button
+              onClick={() => {
+                setImportMessage('');
+                setImportErrors([]);
+              }}
+              style={{
+                position: 'absolute',
+                top: '0.75rem',
+                right: '0.75rem',
+                background: 'transparent',
+                border: 'none',
+                color: 'inherit',
+                cursor: 'pointer',
+                fontSize: '1.25rem',
+                lineHeight: '1',
+                padding: '0.25rem',
+                opacity: 0.7,
+                transition: 'opacity var(--transition-base)',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
+              title="关闭"
+            >
+              ×
+            </button>
             {importMessage}
             {importErrors.length > 0 && (
-              <ul style={{
+              <div style={{
                 marginTop: '0.75rem',
-                marginLeft: '1.25rem',
-                fontSize: '0.875rem',
+                maxHeight: '300px',
+                overflowY: 'auto',
+                background: 'var(--bg-secondary)',
+                padding: '0.75rem',
+                borderRadius: '6px',
+                border: '1px solid var(--border-subtle)',
               }}>
-                {importErrors.map((error, index) => (
-                  <li key={index} style={{ marginBottom: '0.25rem' }}>{error}</li>
-                ))}
-              </ul>
+                <div style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  marginBottom: '0.5rem',
+                  color: 'var(--text-primary)',
+                }}>
+                  错误详情 ({importErrors.length} 条)：
+                </div>
+                <ul style={{
+                  marginLeft: '1.25rem',
+                  fontSize: '0.875rem',
+                  fontFamily: 'var(--font-mono)',
+                  lineHeight: '1.6',
+                }}>
+                  {importErrors.map((error, index) => (
+                    <li key={index} style={{ marginBottom: '0.25rem' }}>{error}</li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         )}
@@ -913,7 +953,7 @@ export default function Settings() {
             marginLeft: '1.25rem',
             lineHeight: '1.6',
           }}>
-            <li><strong>source</strong>: 短码（必填）</li>
+            <li><strong>source</strong>: 短码（必填，支持 <code>abc</code> 或 <code>/abc/</code> 格式）</li>
             <li><strong>target</strong>: 目标URL（必填）</li>
             <li><strong>hits</strong>: 点击次数（可选，导入时忽略）</li>
           </ul>

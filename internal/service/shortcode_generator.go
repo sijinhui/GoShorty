@@ -36,11 +36,11 @@ var blacklistedWords = []string{
 }
 
 var (
-	// 短码格式验证（只允许字母和数字）
-	shortCodeRegex = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+	// 短码格式验证（允许字母、数字和连字符）
+	shortCodeRegex = regexp.MustCompile(`^[a-zA-Z0-9-]+$`)
 
 	ErrInvalidShortCodeLength = errors.New("short code length must be between 3 and 20")
-	ErrInvalidShortCodeFormat = errors.New("short code can only contain letters and numbers")
+	ErrInvalidShortCodeFormat = errors.New("short code can only contain letters, numbers and hyphens")
 	ErrShortCodeBlacklisted   = errors.New("short code is reserved and cannot be used")
 )
 
