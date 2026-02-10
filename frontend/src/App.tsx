@@ -6,7 +6,6 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Links from './pages/Links';
 import LinkStats from './pages/LinkStats';
-import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import LinkExpiry from './pages/LinkExpiry';
 import AdminLayout from './components/layout/AdminLayout';
@@ -179,14 +178,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <LinkStats />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/analytics"
-            element={
-              <ProtectedRoute>
-                <Analytics />
               </ProtectedRoute>
             }
           />

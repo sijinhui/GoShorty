@@ -12,7 +12,6 @@ export default function Sidebar({ onLogout }: SidebarProps) {
   const menuItems = [
     { path: '/admin/dashboard', label: '📊 仪表盘' },
     { path: '/admin/links', label: '🔗 链接管理' },
-    { path: '/admin/analytics', label: '📈 统计分析' },
     { path: '/admin/link-expiry', label: '⏰ 过期管理' },
     { path: '/admin/settings', label: '⚙️ 系统设置' },
   ];
