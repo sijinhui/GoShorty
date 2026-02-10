@@ -165,6 +165,7 @@ func main() {
 			api.POST("/links", apiHandler.CreateLink)
 			api.GET("/links", apiHandler.GetLinks)
 			api.DELETE("/links/:id", apiHandler.DeleteLink)
+			api.GET("/links/:shortCode/analytics", apiHandler.GetLinkAnalyticsByShortCode)
 			api.GET("/analytics/link", apiHandler.GetLinkAnalytics)
 			api.GET("/settings", settingsHandler.GetSettings)
 			api.PUT("/settings", settingsHandler.UpdateSettings)
@@ -206,6 +207,11 @@ func main() {
 				c.File(filepath.Join(cfg.Frontend.StaticPath, "index.html"))
 			})
 		}
+
+		// 链接统计详情路由（如 /admin/links/rHf+）
+		router.GET("/admin/links/:shortCode", func(c *gin.Context) {
+			c.File(filepath.Join(cfg.Frontend.StaticPath, "index.html"))
+		})
 
 		// 根目录静态文件（vite.svg, react.svg等）
 		staticFiles := []string{"vite.svg", "react.svg", "favicon.ico"}

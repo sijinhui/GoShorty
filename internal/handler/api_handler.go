@@ -194,6 +194,30 @@ func (h *APIHandler) GetLinkAnalytics(c *gin.Context) {
 		return
 	}
 
+	RespondSuccess(c, h.buildAnalyticsResponse(c, link), "")
+}
+
+// GetLinkAnalyticsByShortCode 通过短码获取链接统计数据
+func (h *APIHandler) GetLinkAnalyticsByShortCode(c *gin.Context) {
+	shortCode := strings.TrimSpace(c.Param("shortCode"))
+	shortCode = strings.TrimSuffix(shortCode, "+")
+	if shortCode == "" {
+		RespondBadRequest(c, "无效的短码")
+		return
+	}
+
+	link, err := h.linkService.GetByShortCode(c.Request.Context(), shortCode)
+	if err != nil {
+		RespondError(c, err)
+		return
+	}
+
+	RespondSuccess(c, h.buildAnalyticsResponse(c, link), "")
+}
+
+func (h *APIHandler) buildAnalyticsResponse(c *gin.Context, link *domain.Link) gin.H {
+	linkID := link.ID
+
 	// 获取访问日志
 	logs, err := h.analyticsService.GetAccessLogs(c.Request.Context(), linkID, 50, 0)
 	if err != nil {
@@ -215,7 +239,7 @@ func (h *APIHandler) GetLinkAnalytics(c *gin.Context) {
 		"country_stats": countryStats,
 	}
 
-	RespondSuccess(c, response, "")
+	return response
 }
 
 // CreatePublicLink 公开创建短链接（不需要认证）

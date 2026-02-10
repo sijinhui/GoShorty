@@ -35,6 +35,19 @@ func NewRedirectHandler(
 func (h *RedirectHandler) HandleRedirect(c *gin.Context) {
 	shortCode := c.Param("code")
 
+	// 检查是否以 + 结尾（YOURLS 风格的统计页面访问）
+	if len(shortCode) > 0 && shortCode[len(shortCode)-1] == '+' {
+		actualCode := shortCode[:len(shortCode)-1]
+		if actualCode == "" {
+			c.String(http.StatusNotFound, "Not Found")
+			return
+		}
+
+		// 统一跳转到管理后台页面，由前端路由和受保护 API 渲染统计数据
+		c.Redirect(http.StatusFound, "/admin/links/"+actualCode+"+")
+		return
+	}
+
 	link, err := h.linkService.GetByShortCode(c.Request.Context(), shortCode)
 	if err != nil {
 		h.handleError(c, err)
@@ -74,7 +87,7 @@ func (h *RedirectHandler) HandleRedirect(c *gin.Context) {
 func (h *RedirectHandler) handleError(c *gin.Context, err error) {
 	switch err {
 	case domain.ErrLinkNotFound:
-		c.String(http.StatusNotFound, "短链接不存在")
+		c.String(http.StatusNotFound, "Not Found")
 	case domain.ErrLinkExpired:
 		c.String(http.StatusGone, "短链接已过期")
 	case domain.ErrLinkInactive:
