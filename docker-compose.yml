@@ -5,10 +5,11 @@ services:
     build: .
     container_name: goshorty
     image: hub.xiaosi.cc/ghcr.io/sijinhui/goshorty
+    network_mode: "host"
     env_file:
       - ".env"
-    ports:
-      - "8800:8800"
+#    ports:
+#      - "8800:8800"
     restart: unless-stopped
 
 #  postgres:
