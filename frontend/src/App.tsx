@@ -11,6 +11,7 @@ import LinkExpiry from './pages/LinkExpiry';
 import AdminLayout from './components/layout/AdminLayout';
 import { useAuthStore } from './store/authStore';
 import AntdStaticMethods from './components/AntdStaticMethods';
+import ThemeProvider from './providers/ThemeProvider';
 
 // 受保护的路由组件
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -145,7 +146,8 @@ function App() {
   return (
     <AntdApp>
       <AntdStaticMethods />
-      <BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
         <Routes>
           {/* 公开首页 */}
           <Route path="/" element={<Home />} />
@@ -197,6 +199,7 @@ function App() {
           />
         </Routes>
       </BrowserRouter>
+      </ThemeProvider>
     </AntdApp>
   );
 }
