@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Links from './pages/Links';
+import LinkStats from './pages/LinkStats';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import LinkExpiry from './pages/LinkExpiry';
@@ -170,6 +171,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Links />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/links/:shortCode"
+            element={
+              <ProtectedRoute>
+                <LinkStats />
               </ProtectedRoute>
             }
           />

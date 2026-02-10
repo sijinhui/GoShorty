@@ -1,5 +1,6 @@
 import { Table, Tag, Typography, Button, Popconfirm, Space, Tooltip, Badge, message } from 'antd';
-import { DeleteOutlined, ClockCircleOutlined, GlobalOutlined, LinkOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ClockCircleOutlined, GlobalOutlined, LinkOutlined, BarChartOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import type { Link, PaginationMeta } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { getShortLinkUrl } from '../../utils/url';
@@ -24,6 +25,7 @@ export default function LinkTable({
   loading = false
 }: LinkTableProps) {
   const [messageApi, contextHolder] = message.useMessage();
+  const navigate = useNavigate();
 
   const columns: ColumnsType<Link> = [
     {
@@ -138,21 +140,31 @@ export default function LinkTable({
     {
       title: '操作',
       key: 'action',
-      width: 100,
+      width: 170,
       align: 'right',
       render: (_, record) => (
-        <Popconfirm
-          title="删除链接"
-          description="确定要删除这个短链接吗？"
-          onConfirm={() => onDelete(record.id)}
-          okText="删除"
-          cancelText="取消"
-          okButtonProps={{ danger: true }}
-        >
-          <Button type="link" danger size="small" icon={<DeleteOutlined />}>
-            删除
+        <Space size={0}>
+          <Button
+            type="link"
+            size="small"
+            icon={<BarChartOutlined />}
+            onClick={() => navigate(`/admin/links/${record.short_code}+`)}
+          >
+            统计
           </Button>
-        </Popconfirm>
+          <Popconfirm
+            title="删除链接"
+            description="确定要删除这个短链接吗？"
+            onConfirm={() => onDelete(record.id)}
+            okText="删除"
+            cancelText="取消"
+            okButtonProps={{ danger: true }}
+          >
+            <Button type="link" danger size="small" icon={<DeleteOutlined />}>
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];

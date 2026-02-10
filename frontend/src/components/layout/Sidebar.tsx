@@ -17,6 +17,14 @@ export default function Sidebar({ onLogout }: SidebarProps) {
     { path: '/admin/settings', label: '⚙️ 系统设置' },
   ];
 
+  const isMenuActive = (path: string) => {
+    if (path === '/admin/links') {
+      return location.pathname === path || location.pathname.startsWith('/admin/links/');
+    }
+
+    return location.pathname === path;
+  };
+
   return (
     <div style={{
       width: '250px',
@@ -58,7 +66,7 @@ export default function Sidebar({ onLogout }: SidebarProps) {
 
       <nav style={{ flex: 1 }}>
         {menuItems.map((item, index) => {
-          const isActive = location.pathname === item.path;
+          const isActive = isMenuActive(item.path);
           return (
             <Link
               key={item.path}
