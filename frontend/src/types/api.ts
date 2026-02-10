@@ -69,6 +69,7 @@ export interface AnalyticsData {
   link: Link;
   access_logs: AccessLog[];
   country_stats: Record<string, number>;
+  pagination: PaginationMeta;
 }
 
 // 登录请求类型

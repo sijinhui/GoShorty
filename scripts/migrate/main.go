@@ -38,6 +38,7 @@ func main() {
 		"internal/database/migrations/005_alter_links_table.sql",
 		"internal/database/migrations/006_create_rate_limits_table.sql",
 		"internal/database/migrations/007_add_rate_limit_settings.sql",
+		"internal/database/migrations/008_widen_access_logs_country.sql",
 	}
 
 	ctx := context.Background()

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -44,10 +44,12 @@ export default function LinkStats() {
   const navigate = useNavigate();
   const { shortCode: rawShortCode } = useParams();
   const shortCode = useMemo(() => normalizeShortCode(rawShortCode), [rawShortCode]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ['analytics-by-short-code', shortCode],
-    queryFn: () => getLinkAnalyticsByShortCode(shortCode),
+    queryKey: ['analytics-by-short-code', shortCode, currentPage],
+    queryFn: () => getLinkAnalyticsByShortCode(shortCode, currentPage, pageSize),
     enabled: shortCode.length > 0,
     retry: false,
   });
@@ -56,6 +58,7 @@ export default function LinkStats() {
   const link = analyticsData?.link;
   const accessLogs = analyticsData?.access_logs ?? [];
   const countryStats = analyticsData?.country_stats ?? {};
+  const pagination = analyticsData?.pagination;
 
   const countryRows = useMemo<CountryStatRow[]>(() => {
     return Object.entries(countryStats)
@@ -202,7 +205,7 @@ export default function LinkStats() {
             </Col>
             <Col xs={24} sm={8}>
               <Card loading={isLoading} bordered={false} style={{ boxShadow: 'var(--shadow-sm)' }}>
-                <Statistic title='访问记录' value={accessLogs.length} prefix={<span style={{ fontSize: '1.5rem', marginRight: 8 }}>📝</span>} />
+                <Statistic title='访问记录' value={pagination?.total ?? 0} prefix={<span style={{ fontSize: '1.5rem', marginRight: 8 }}>📝</span>} />
               </Card>
             </Col>
             <Col xs={24} sm={8}>
@@ -213,7 +216,7 @@ export default function LinkStats() {
           </Row>
 
           <Row gutter={[24, 24]}>
-             <Col xs={24} lg={12}>
+             <Col xs={24} md={12} lg={8}>
                 <Card title='国家/地区分布' loading={isLoading} bordered={false} style={{ boxShadow: 'var(--shadow-sm)', height: '100%' }}>
                   <Table
                     rowKey={(row) => row.country}
@@ -225,13 +228,19 @@ export default function LinkStats() {
                   />
                 </Card>
              </Col>
-             <Col xs={24} lg={12}>
+             <Col xs={24} md={12} lg={16}>
                 <Card title='最近访问记录' loading={isLoading} bordered={false} style={{ boxShadow: 'var(--shadow-sm)', height: '100%' }}>
                   <Table
                     rowKey={(row) => row.id}
                     columns={accessLogColumns}
                     dataSource={accessLogs}
-                    pagination={{ pageSize: 10, showSizeChanger: false }}
+                    pagination={{
+                      current: currentPage,
+                      pageSize,
+                      total: pagination?.total ?? 0,
+                      showSizeChanger: false,
+                      onChange: (page) => setCurrentPage(page),
+                    }}
                     locale={{ emptyText: '暂无访问记录' }}
                     scroll={{ x: 'max-content' }}
                   />

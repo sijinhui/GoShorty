@@ -179,6 +179,19 @@ func (h *APIHandler) DeleteLink(c *gin.Context) {
 	RespondSuccess(c, nil, "链接已删除")
 }
 
+// parsePageParams 从查询参数中解析分页参数
+func parsePageParams(c *gin.Context) (page, limit int) {
+	page, _ = strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ = strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+	return
+}
+
 // GetLinkAnalytics 获取链接统计数据
 func (h *APIHandler) GetLinkAnalytics(c *gin.Context) {
 	linkID, err := strconv.ParseInt(c.Query("link_id"), 10, 64)
@@ -194,7 +207,8 @@ func (h *APIHandler) GetLinkAnalytics(c *gin.Context) {
 		return
 	}
 
-	RespondSuccess(c, h.buildAnalyticsResponse(c, link), "")
+	page, limit := parsePageParams(c)
+	RespondSuccess(c, h.buildAnalyticsResponse(c, link, page, limit), "")
 }
 
 // GetLinkAnalyticsByShortCode 通过短码获取链接统计数据
@@ -212,17 +226,26 @@ func (h *APIHandler) GetLinkAnalyticsByShortCode(c *gin.Context) {
 		return
 	}
 
-	RespondSuccess(c, h.buildAnalyticsResponse(c, link), "")
+	page, limit := parsePageParams(c)
+	RespondSuccess(c, h.buildAnalyticsResponse(c, link, page, limit), "")
 }
 
-func (h *APIHandler) buildAnalyticsResponse(c *gin.Context, link *domain.Link) gin.H {
+func (h *APIHandler) buildAnalyticsResponse(c *gin.Context, link *domain.Link, page, limit int) gin.H {
 	linkID := link.ID
+	offset := (page - 1) * limit
 
-	// 获取访问日志
-	logs, err := h.analyticsService.GetAccessLogs(c.Request.Context(), linkID, 50, 0)
+	// 获取访问日志（分页）
+	logs, err := h.analyticsService.GetAccessLogs(c.Request.Context(), linkID, limit, offset)
 	if err != nil {
 		h.logger.Error("Failed to get access logs", zap.Error(err))
 		logs = []*domain.AccessLog{}
+	}
+
+	// 获取访问日志总数
+	totalLogs, err := h.analyticsService.GetAccessLogCount(c.Request.Context(), linkID)
+	if err != nil {
+		h.logger.Error("Failed to get access log count", zap.Error(err))
+		totalLogs = 0
 	}
 
 	// 获取国家统计
@@ -232,11 +255,24 @@ func (h *APIHandler) buildAnalyticsResponse(c *gin.Context, link *domain.Link) g
 		countryStats = make(map[string]int64)
 	}
 
+	totalPages := int(totalLogs) / limit
+	if int(totalLogs)%limit > 0 {
+		totalPages++
+	}
+
 	// 返回JSON格式的统计数据
 	response := gin.H{
 		"link":          link,
 		"access_logs":   logs,
 		"country_stats": countryStats,
+		"pagination": PaginationMeta{
+			Page:       page,
+			Limit:      limit,
+			Total:      totalLogs,
+			TotalPages: totalPages,
+			HasNext:    page < totalPages,
+			HasPrev:    page > 1,
+		},
 	}
 
 	return response

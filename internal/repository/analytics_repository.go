@@ -91,7 +91,7 @@ func (r *PostgresAnalyticsRepository) BatchCreateAccessLogs(ctx context.Context,
 // GetAccessLogsByLinkID 根据链接ID获取访问日志
 func (r *PostgresAnalyticsRepository) GetAccessLogsByLinkID(ctx context.Context, linkID int64, limit, offset int) ([]*domain.AccessLog, error) {
 	query := `
-		SELECT id, link_id, ip_address, user_agent, referer, country, city, latitude, longitude, accessed_at
+		SELECT id, link_id, ip_address::text, user_agent, referer, country, city, latitude, longitude, accessed_at
 		FROM access_logs
 		WHERE link_id = $1
 		ORDER BY accessed_at DESC
