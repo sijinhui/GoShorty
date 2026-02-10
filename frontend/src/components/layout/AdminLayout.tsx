@@ -32,6 +32,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <main style={{
           padding: '2rem',
           maxWidth: '1400px',
+          margin: '0 auto',
           animation: 'fadeIn 0.4s ease-out',
         }}>
           {children}
