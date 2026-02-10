@@ -2,13 +2,13 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"time"
 
 	"GoShorty/internal/domain"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -107,7 +107,7 @@ func (r *PostgresLinkRepository) GetByID(ctx context.Context, id int64) (*domain
 
 	link, err := scanLink(r.pool.QueryRow(ctx, query, id))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domain.ErrLinkNotFound
 		}
 		return nil, err
@@ -126,7 +126,7 @@ func (r *PostgresLinkRepository) GetByShortCode(ctx context.Context, shortCode s
 
 	link, err := scanLink(r.pool.QueryRow(ctx, query, shortCode))
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domain.ErrLinkNotFound
 		}
 		return nil, err
