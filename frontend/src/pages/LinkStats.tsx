@@ -146,17 +146,9 @@ export default function LinkStats() {
           >
             返回
           </Button>
-          <h1 style={{
-            fontSize: '1.75rem',
-            fontWeight: '800',
-            fontFamily: 'var(--font-heading)',
-            margin: 0,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.01em',
-            lineHeight: 1.2,
-          }}>
+          <Typography.Title level={2} style={{ margin: 0, letterSpacing: '-0.01em' }}>
             链接统计
-          </h1>
+          </Typography.Title>
         </Space>
         
         <Button 

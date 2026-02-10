@@ -76,7 +76,7 @@ export default function Links() {
       <Card
         bordered={false}
         bodyStyle={{ padding: 0 }}
-        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderRadius: '8px', overflow: 'hidden' }}
+        style={{ boxShadow: 'var(--shadow-sm)', borderRadius: '8px', overflow: 'hidden' }}
       >
         {data && (
           <LinkTable

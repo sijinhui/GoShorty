@@ -327,3 +327,75 @@ button:disabled {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--gray-500);
 }
+
+/* Ant Design Component Transitions */
+.ant-layout,
+.ant-layout-header,
+.ant-layout-sider,
+.ant-layout-content,
+.ant-menu,
+.ant-table,
+.ant-table-header,
+.ant-table-body,
+.ant-table-thead > tr > th,
+.ant-table-tbody > tr > td,
+.ant-table-tbody > tr.ant-table-row:hover > td,
+.ant-table-placeholder,
+.ant-table-empty .ant-empty,
+.ant-card,
+.ant-card-head,
+.ant-card-body,
+.ant-pagination-item,
+.ant-pagination-item-link,
+.ant-pagination-item-active,
+.ant-pagination-options,
+.ant-pagination-total-text,
+.ant-btn,
+.ant-input,
+.ant-select-selector,
+.ant-modal-content,
+.ant-modal-header,
+.ant-drawer-content,
+.ant-drawer-header,
+.ant-popover-inner,
+.ant-popover-title,
+.ant-message-notice-content,
+.ant-typography,
+.ant-typography code,
+/* Add generic code/pre transitions if used */
+code,
+kbd,
+.ant-tag,
+h1, h2, h3, h4, h5, h6 {
+  transition: 
+    background-color var(--transition-base),
+    color var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base) !important;
+}
+
+/* Specific fix for Table hover background transition */
+.ant-table-tbody > tr > td.ant-table-cell-row-hover {
+  transition: background-color var(--transition-fast) !important;
+}
+
+/* Statistic & Descriptions Transitions */
+.ant-statistic-title,
+.ant-statistic-content,
+.ant-statistic-content-value,
+.ant-statistic-content-suffix,
+.ant-statistic-content-prefix,
+.ant-descriptions,
+.ant-descriptions-view,
+.ant-descriptions-row,
+.ant-descriptions-title,
+.ant-descriptions-item-label,
+.ant-descriptions-item-content,
+.ant-card-head-title,
+.ant-list-item-meta-title,
+.ant-list-item-meta-description {
+  transition: 
+    background-color var(--transition-base),
+    color var(--transition-base),
+    border-color var(--transition-base) !important;
+}
