@@ -17,6 +17,7 @@ import { getShortLinkUrl } from '../utils/url';
 import type { LinkExpiry } from '../api/linkExpiry';
 import type { ColumnsType } from 'antd/es/table';
 import type { APIError } from '../types/api';
+import { useResponsive } from '../hooks/useResponsive';
 
 const { Title } = Typography;
 
@@ -24,6 +25,7 @@ export default function LinkExpiryPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const offset = (page - 1) * pageSize;
+  const { isMobile } = useResponsive();
 
   const queryClient = useQueryClient();
   const [messageApi, contextHolder] = message.useMessage();
@@ -160,10 +162,10 @@ export default function LinkExpiryPage() {
   const total = data?.data?.total || 0;
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '16px' : '24px', maxWidth: '1200px', margin: '0 auto' }}>
       {contextHolder}
 
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <Title level={2} style={{ margin: 0 }}>链接过期管理</Title>
         <Space>
           <Tooltip title="刷新列表">

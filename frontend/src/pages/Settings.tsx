@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSettings, updateSettings } from '../api/settings';
 import { getPlugins, updatePluginConfig } from '../api/plugins';
 import { exportLinks, importLinks } from '../api/links';
+import { useResponsive } from '../hooks/useResponsive';
 
 export default function Settings() {
   const queryClient = useQueryClient();
+  const { isMobile } = useResponsive();
   const [shortCodeLength, setShortCodeLength] = useState<number>(3);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [pluginSuccessMessage, setPluginSuccessMessage] = useState<string>('');
@@ -293,7 +295,7 @@ export default function Settings() {
       {/* 短链接设置 */}
       <div style={{
         background: 'var(--bg-elevated)',
-        padding: '1.75rem',
+        padding: isMobile ? '1rem' : '1.75rem',
         borderRadius: '12px',
         boxShadow: 'var(--shadow-md)',
         border: '1px solid var(--border-subtle)',
@@ -377,7 +379,7 @@ export default function Settings() {
       {/* 速率限制设置 */}
       <div style={{
         background: 'var(--bg-elevated)',
-        padding: '1.75rem',
+        padding: isMobile ? '1rem' : '1.75rem',
         borderRadius: '12px',
         boxShadow: 'var(--shadow-md)',
         border: '1px solid var(--border-subtle)',
@@ -573,7 +575,7 @@ export default function Settings() {
       {/* 插件管理 */}
       <div style={{
         background: 'var(--bg-elevated)',
-        padding: '1.75rem',
+        padding: isMobile ? '1rem' : '1.75rem',
         borderRadius: '12px',
         boxShadow: 'var(--shadow-md)',
         border: '1px solid var(--border-subtle)',
@@ -610,6 +612,8 @@ export default function Settings() {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   marginBottom: '0.75rem',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
                 }}>
                   <div>
                     <h3 style={{
@@ -777,7 +781,7 @@ export default function Settings() {
       {/* 数据导入导出 */}
       <div style={{
         background: 'var(--bg-elevated)',
-        padding: '1.75rem',
+        padding: isMobile ? '1rem' : '1.75rem',
         borderRadius: '12px',
         boxShadow: 'var(--shadow-md)',
         border: '1px solid var(--border-subtle)',

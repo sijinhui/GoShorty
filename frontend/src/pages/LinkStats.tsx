@@ -19,6 +19,7 @@ import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons';
 import { getLinkAnalyticsByShortCode } from '../api/analytics';
 import type { AccessLog, APIError } from '../types/api';
 import { getShortLinkUrl } from '../utils/url';
+import { useResponsive } from '../hooks/useResponsive';
 
 const { Text, Link } = Typography;
 
@@ -46,6 +47,7 @@ export default function LinkStats() {
   const shortCode = useMemo(() => normalizeShortCode(rawShortCode), [rawShortCode]);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
+  const { isMobile } = useResponsive();
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['analytics-by-short-code', shortCode, currentPage],
@@ -140,6 +142,8 @@ export default function LinkStats() {
         alignItems: 'center',
         marginBottom: '2rem',
         animation: 'fadeIn 0.5s ease-out',
+        flexWrap: 'wrap',
+        gap: '12px',
       }}>
         <Space size={16}>
           <Button
