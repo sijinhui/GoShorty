@@ -13,9 +13,7 @@ import {
   Table,
   Tag,
   Typography,
-  Divider,
   Pagination,
-  List,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ArrowLeftOutlined, ReloadOutlined, GlobalOutlined, ClockCircleOutlined } from '@ant-design/icons';
