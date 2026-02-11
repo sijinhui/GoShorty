@@ -13,9 +13,12 @@ import {
   Table,
   Tag,
   Typography,
+  Divider,
+  Pagination,
+  List,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, ReloadOutlined, GlobalOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { getLinkAnalyticsByShortCode } from '../api/analytics';
 import type { AccessLog, APIError } from '../types/api';
 import { getShortLinkUrl } from '../utils/url';
@@ -121,6 +124,69 @@ export default function LinkStats() {
     },
   ];
 
+  // Mobile card renderers
+  const renderAccessLogCard = (log: AccessLog) => (
+    <Card
+      key={log.id}
+      size="small"
+      style={{
+        marginBottom: '12px',
+        borderRadius: '8px',
+        border: '1px solid var(--border-subtle)',
+        animation: 'fadeIn 0.3s ease-out',
+      }}
+      bodyStyle={{ padding: '12px' }}
+    >
+      <Space direction="vertical" size={8} style={{ width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Space size={4}>
+            <ClockCircleOutlined style={{ fontSize: '12px', color: 'var(--text-tertiary)' }} />
+            <Text style={{ fontSize: '13px' }}>
+              {new Date(log.accessed_at).toLocaleString('zh-CN', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
+          </Space>
+          <Tag>{log.country || '未知'}</Tag>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Space size={4}>
+            <GlobalOutlined style={{ fontSize: '12px', color: 'var(--text-tertiary)' }} />
+            <Text code style={{ fontSize: '12px' }}>{log.ip_address}</Text>
+          </Space>
+        </div>
+        {log.user_agent && (
+          <Text type="secondary" style={{ fontSize: '11px', wordBreak: 'break-all' }}>
+            {log.user_agent}
+          </Text>
+        )}
+      </Space>
+    </Card>
+  );
+
+  const renderCountryCard = (row: CountryStatRow) => (
+    <div
+      key={row.country}
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '12px',
+        marginBottom: '8px',
+        background: 'var(--bg-secondary)',
+        borderRadius: '8px',
+        border: '1px solid var(--border-subtle)',
+        animation: 'fadeIn 0.3s ease-out',
+      }}
+    >
+      <Text>{row.country}</Text>
+      <Text strong style={{ fontSize: '16px', color: 'var(--accent-primary)' }}>{row.count}</Text>
+    </div>
+  );
+
   if (!shortCode) {
     return (
       <div style={{ maxWidth: '960px', margin: '0 auto' }}>
@@ -222,32 +288,69 @@ export default function LinkStats() {
           <Row gutter={[24, 24]}>
              <Col xs={24} md={12} lg={8}>
                 <Card title='国家/地区分布' loading={isLoading} bordered={false} style={{ boxShadow: 'var(--shadow-sm)', height: '100%' }}>
-                  <Table
-                    rowKey={(row) => row.country}
-                    columns={countryColumns}
-                    dataSource={countryRows}
-                    pagination={false}
-                    locale={{ emptyText: '暂无访问数据' }}
-                    scroll={{ y: 400 }}
-                  />
+                  {isMobile ? (
+                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                      {countryRows.length === 0 ? (
+                        <Text type="secondary" style={{ display: 'block', textAlign: 'center', padding: '20px' }}>
+                          暂无访问数据
+                        </Text>
+                      ) : (
+                        countryRows.map(renderCountryCard)
+                      )}
+                    </div>
+                  ) : (
+                    <Table
+                      rowKey={(row) => row.country}
+                      columns={countryColumns}
+                      dataSource={countryRows}
+                      pagination={false}
+                      locale={{ emptyText: '暂无访问数据' }}
+                      scroll={{ y: 400 }}
+                    />
+                  )}
                 </Card>
              </Col>
              <Col xs={24} md={12} lg={16}>
                 <Card title='最近访问记录' loading={isLoading} bordered={false} style={{ boxShadow: 'var(--shadow-sm)', height: '100%' }}>
-                  <Table
-                    rowKey={(row) => row.id}
-                    columns={accessLogColumns}
-                    dataSource={accessLogs}
-                    pagination={{
-                      current: currentPage,
-                      pageSize,
-                      total: pagination?.total ?? 0,
-                      showSizeChanger: false,
-                      onChange: (page) => setCurrentPage(page),
-                    }}
-                    locale={{ emptyText: '暂无访问记录' }}
-                    scroll={{ x: 'max-content' }}
-                  />
+                  {isMobile ? (
+                    <>
+                      <div style={{ maxHeight: '400px', overflowY: 'auto', marginBottom: '12px' }}>
+                        {accessLogs.length === 0 ? (
+                          <Text type="secondary" style={{ display: 'block', textAlign: 'center', padding: '20px' }}>
+                            暂无访问记录
+                          </Text>
+                        ) : (
+                          accessLogs.map(renderAccessLogCard)
+                        )}
+                      </div>
+                      {(pagination?.total ?? 0) > 0 && (
+                        <Pagination
+                          current={currentPage}
+                          pageSize={pageSize}
+                          total={pagination?.total ?? 0}
+                          onChange={(page) => setCurrentPage(page)}
+                          showSizeChanger={false}
+                          simple
+                          style={{ textAlign: 'center' }}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <Table
+                      rowKey={(row) => row.id}
+                      columns={accessLogColumns}
+                      dataSource={accessLogs}
+                      pagination={{
+                        current: currentPage,
+                        pageSize,
+                        total: pagination?.total ?? 0,
+                        showSizeChanger: false,
+                        onChange: (page) => setCurrentPage(page),
+                      }}
+                      locale={{ emptyText: '暂无访问记录' }}
+                      scroll={{ x: 'max-content' }}
+                    />
+                  )}
                 </Card>
              </Col>
           </Row>
