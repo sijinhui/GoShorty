@@ -161,7 +161,9 @@ export default function LinkExpiryPage() {
   ];
 
   const expiries = data?.data?.expiries || [];
-  const total = data?.data?.total || 0;
+  const expiredTotal = data?.data?.total || 0;
+  // Keep mobile count aligned with desktop table pagination fallback behavior.
+  const listTotal = Math.max(expiredTotal, expiries.length);
 
   // Helper function to calculate time remaining
   const getTimeStatus = (expiresAt: string) => {
@@ -339,23 +341,23 @@ export default function LinkExpiryPage() {
             </Button>
             <Popconfirm
               title="警告"
-              description={`确定要删除所有 ${total} 条已过期的链接吗？此操作将同时删除链接本身，不可撤销！`}
+              description={`确定要删除所有 ${expiredTotal} 条已过期的链接吗？此操作将同时删除链接本身，不可撤销！`}
               onConfirm={() => deleteAllMutation.mutate()}
               okText="全部删除"
               cancelText="取消"
               icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
               okButtonProps={{ danger: true, loading: deleteAllMutation.isPending }}
-              disabled={total === 0}
+              disabled={expiredTotal === 0}
             >
               <Button
                 danger
                 type="primary"
                 icon={<DeleteOutlined />}
-                disabled={total === 0}
+                disabled={expiredTotal === 0}
                 block
                 style={{ borderRadius: '8px' }}
               >
-                删除所有已过期链接 ({total})
+                删除所有已过期链接 ({expiredTotal})
               </Button>
             </Popconfirm>
           </Space>
@@ -380,7 +382,7 @@ export default function LinkExpiryPage() {
             <Pagination
               current={page}
               pageSize={pageSize}
-              total={total}
+              total={listTotal}
               onChange={(p) => setPage(p)}
               showTotal={(total) => `共 ${total} 条`}
               style={{
@@ -413,21 +415,21 @@ export default function LinkExpiryPage() {
           </Tooltip>
           <Popconfirm
             title="警告"
-            description={`确定要删除所有 ${total} 条已过期的链接吗？此操作将同时删除链接本身，不可撤销！`}
+            description={`确定要删除所有 ${expiredTotal} 条已过期的链接吗？此操作将同时删除链接本身，不可撤销！`}
             onConfirm={() => deleteAllMutation.mutate()}
             okText="全部删除"
             cancelText="取消"
             icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
             okButtonProps={{ danger: true, loading: deleteAllMutation.isPending }}
-            disabled={total === 0}
+            disabled={expiredTotal === 0}
           >
             <Button
               danger
               type="primary"
               icon={<DeleteOutlined />}
-              disabled={total === 0}
+              disabled={expiredTotal === 0}
             >
-              删除所有已过期链接 ({total})
+              删除所有已过期链接 ({expiredTotal})
             </Button>
           </Popconfirm>
         </Space>
@@ -446,7 +448,7 @@ export default function LinkExpiryPage() {
           pagination={{
             current: page,
             pageSize: pageSize,
-            total: total,
+            total: listTotal,
             onChange: (p) => setPage(p),
             showTotal: (total) => `共 ${total} 条记录`,
             position: ['bottomCenter'],
@@ -456,4 +458,3 @@ export default function LinkExpiryPage() {
     </div>
   );
 }
-
