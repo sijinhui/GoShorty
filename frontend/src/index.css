@@ -366,8 +366,12 @@ button:disabled {
 code,
 kbd,
 .ant-tag,
+.ant-list,
+.ant-list-item,
+.ant-divider,
+.ant-badge,
 h1, h2, h3, h4, h5, h6 {
-  transition: 
+  transition:
     background-color var(--transition-base),
     color var(--transition-base),
     border-color var(--transition-base),
@@ -434,6 +438,15 @@ h1, h2, h3, h4, h5, h6 {
 
   .ant-statistic-content {
     font-size: 1.25rem;
+  }
+
+  /* Mobile card hover effect */
+  .ant-card {
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast) !important;
+  }
+
+  .ant-card:active {
+    transform: scale(0.98);
   }
 }
 
