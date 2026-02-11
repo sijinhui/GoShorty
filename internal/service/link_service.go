@@ -27,12 +27,13 @@ type LinkService interface {
 
 // CreateLinkRequest 创建链接请求
 type CreateLinkRequest struct {
-	URL        string
-	CustomCode string
-	Title      string
-	UserID     int
-	CreatedIP  string
-	ExpiryDays int
+	URL             string
+	CustomCode      string
+	Title           string
+	UserID          int
+	CreatedIP       string
+	ExpiryDays      int
+	BypassMinLength bool // admin后台创建时可以绕过最小长度限制
 }
 
 // UpdateLinkRequest 更新链接请求
@@ -85,7 +86,21 @@ func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*
 
 	if req.CustomCode != "" {
 		// 使用自定义短码
-		if err := s.codeGenerator.Validate(req.CustomCode); err != nil {
+		var err error
+		if req.BypassMinLength {
+			// admin后台创建，绕过最小长度限制
+			if generator, ok := s.codeGenerator.(*Base62Generator); ok {
+				err = generator.ValidateWithoutMinLength(req.CustomCode)
+			} else {
+				// 如果不是Base62Generator，使用标准验证
+				err = s.codeGenerator.Validate(req.CustomCode)
+			}
+		} else {
+			// 普通创建，使用标准验证
+			err = s.codeGenerator.Validate(req.CustomCode)
+		}
+
+		if err != nil {
 			s.logger.Error("invalid custom code", zap.String("code", req.CustomCode), zap.Error(err))
 			// 检查是否是黑名单错误
 			if errors.Is(err, ErrShortCodeBlacklisted) {

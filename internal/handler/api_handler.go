@@ -106,12 +106,13 @@ func (h *APIHandler) CreateLink(c *gin.Context) {
 	)
 
 	link, err := h.linkService.CreateLink(c.Request.Context(), &service.CreateLinkRequest{
-		URL:        req.OriginalURL,
-		CustomCode: req.ShortCode,
-		Title:      req.Title,
-		UserID:     1,
-		CreatedIP:  getClientIP(c),
-		ExpiryDays: expiryDays,
+		URL:             req.OriginalURL,
+		CustomCode:      req.ShortCode,
+		Title:           req.Title,
+		UserID:          1,
+		CreatedIP:       getClientIP(c),
+		ExpiryDays:      expiryDays,
+		BypassMinLength: true, // admin后台创建允许绕过最小长度限制
 	})
 	if err != nil {
 		h.logger.Error("Failed to create link", zap.Error(err))
@@ -404,10 +405,11 @@ func (h *APIHandler) ImportLinks(c *gin.Context) {
 
 		// 创建链接
 		_, err := h.linkService.CreateLink(c.Request.Context(), &service.CreateLinkRequest{
-			URL:        originalURL,
-			CustomCode: shortCode,
-			UserID:     1,
-			CreatedIP:  getClientIP(c),
+			URL:             originalURL,
+			CustomCode:      shortCode,
+			UserID:          1,
+			CreatedIP:       getClientIP(c),
+			BypassMinLength: true, // 导入时允许绕过最小长度限制
 		})
 
 		if err != nil {

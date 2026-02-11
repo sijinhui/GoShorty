@@ -21,7 +21,7 @@ const (
 	base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 	// 默认短码长度
-	defaultShortCodeLength = 6
+	defaultShortCodeLength = 5
 	// 短码最小长度
 	minShortCodeLength = 3
 	// 短码最大长度
@@ -102,6 +102,23 @@ func (g *Base62Generator) Generate() (string, error) {
 // Validate 验证短码格式
 func (g *Base62Generator) Validate(code string) error {
 	if len(code) < minShortCodeLength || len(code) > maxShortCodeLength {
+		return ErrInvalidShortCodeLength
+	}
+
+	if !shortCodeRegex.MatchString(code) {
+		return ErrInvalidShortCodeFormat
+	}
+
+	if isBlacklisted(code) {
+		return ErrShortCodeBlacklisted
+	}
+
+	return nil
+}
+
+// ValidateWithoutMinLength 验证短码格式（不检查最小长度，用于admin后台）
+func (g *Base62Generator) ValidateWithoutMinLength(code string) error {
+	if len(code) < 1 || len(code) > maxShortCodeLength {
 		return ErrInvalidShortCodeLength
 	}
 
