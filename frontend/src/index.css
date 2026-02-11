@@ -366,8 +366,12 @@ button:disabled {
 code,
 kbd,
 .ant-tag,
+.ant-list,
+.ant-list-item,
+.ant-divider,
+.ant-badge,
 h1, h2, h3, h4, h5, h6 {
-  transition: 
+  transition:
     background-color var(--transition-base),
     color var(--transition-base),
     border-color var(--transition-base),
@@ -398,4 +402,55 @@ h1, h2, h3, h4, h5, h6 {
     background-color var(--transition-base),
     color var(--transition-base),
     border-color var(--transition-base) !important;
+}
+
+/* ── Responsive: Mobile ── */
+@media (max-width: 767px) {
+  .ant-table {
+    font-size: 0.8125rem;
+  }
+
+  .ant-pagination {
+    gap: 4px;
+  }
+
+  .ant-pagination-item,
+  .ant-pagination-prev,
+  .ant-pagination-next {
+    min-width: 28px;
+    height: 28px;
+    line-height: 28px;
+  }
+
+  .ant-descriptions-item-label,
+  .ant-descriptions-item-content {
+    padding: 8px !important;
+    font-size: 0.8125rem;
+  }
+
+  .ant-card-body {
+    padding: 12px !important;
+  }
+
+  .ant-statistic-title {
+    font-size: 0.75rem;
+  }
+
+  .ant-statistic-content {
+    font-size: 1.25rem;
+  }
+
+  /* Mobile card hover effect */
+  .ant-card {
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast) !important;
+  }
+
+  .ant-card:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Drawer transition smoothness */
+.ant-drawer-content-wrapper {
+  transition: transform var(--transition-slow) !important;
 }

@@ -1,11 +1,12 @@
-import { Table, Tag, Typography, Button, Popconfirm, Space, Tooltip, Badge, message } from 'antd';
-import { DeleteOutlined, ClockCircleOutlined, GlobalOutlined, LinkOutlined, BarChartOutlined } from '@ant-design/icons';
+import { Table, Tag, Typography, Button, Popconfirm, Space, Tooltip, Badge, message, List, Card, Divider, Pagination } from 'antd';
+import { DeleteOutlined, ClockCircleOutlined, GlobalOutlined, LinkOutlined, BarChartOutlined, CopyOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { Link, PaginationMeta } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { getShortLinkUrl } from '../../utils/url';
+import { useResponsive } from '../../hooks/useResponsive';
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 interface LinkTableProps {
   links: Link[];
@@ -26,6 +27,7 @@ export default function LinkTable({
 }: LinkTableProps) {
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
+  const { isMobile } = useResponsive();
 
   const columns: ColumnsType<Link> = [
     {
@@ -168,6 +170,207 @@ export default function LinkTable({
       ),
     },
   ];
+
+  // Mobile card view renderer
+  const renderMobileCard = (link: Link) => {
+    const shortUrl = getShortLinkUrl(link.short_code);
+
+    return (
+      <Card
+        key={link.id}
+        style={{
+          marginBottom: '16px',
+          borderRadius: '12px',
+          boxShadow: 'var(--shadow-sm)',
+          border: '1px solid var(--border-subtle)',
+          overflow: 'hidden',
+          animation: 'fadeIn 0.3s ease-out',
+        }}
+        bodyStyle={{ padding: '16px' }}
+      >
+        {/* Header: Short Code with Tags */}
+        <div style={{ marginBottom: '12px' }}>
+          <Space direction="vertical" size={8} style={{ width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text
+                copyable={{
+                  text: shortUrl,
+                  icon: <CopyOutlined style={{ fontSize: '14px' }} />,
+                  onCopy: () => messageApi.success('短链接已复制'),
+                }}
+                strong
+                style={{
+                  fontFamily: 'var(--font-heading)',
+                  fontSize: '16px',
+                  color: 'var(--accent-primary)',
+                }}
+              >
+                {link.short_code}
+              </Text>
+              <Badge
+                count={link.click_count}
+                overflowCount={9999}
+                showZero
+                style={{
+                  backgroundColor: link.click_count > 0 ? 'var(--accent-primary)' : 'var(--gray-600)',
+                }}
+              />
+            </div>
+
+            <Space size={4} wrap>
+              {link.custom_code && (
+                <Tag color="success" style={{ fontSize: '11px', margin: 0 }}>自定义</Tag>
+              )}
+              {expiryShortCodes.has(link.short_code) && (
+                <Tag color="warning" icon={<ClockCircleOutlined />} style={{ fontSize: '11px', margin: 0 }}>
+                  限时
+                </Tag>
+              )}
+              <Tag color={link.is_active ? 'success' : 'error'} style={{ fontSize: '11px', margin: 0 }}>
+                {link.is_active ? '活跃' : '已禁用'}
+              </Tag>
+            </Space>
+          </Space>
+        </div>
+
+        <Divider style={{ margin: '12px 0', borderColor: 'var(--border-subtle)' }} />
+
+        {/* Original URL */}
+        <div style={{ marginBottom: '12px' }}>
+          <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>
+            原始链接
+          </Text>
+          <a
+            href={link.original_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '13px',
+              wordBreak: 'break-all',
+              color: 'var(--accent-primary)',
+            }}
+          >
+            <LinkOutlined style={{ flexShrink: 0 }} />
+            <span>{link.original_url}</span>
+          </a>
+          {link.title && (
+            <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '4px' }}>
+              {link.title}
+            </Text>
+          )}
+        </div>
+
+        {/* Metadata */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '12px',
+          marginBottom: '12px',
+          padding: '12px',
+          background: 'var(--bg-secondary)',
+          borderRadius: '8px',
+        }}>
+          <div>
+            <Text type="secondary" style={{ fontSize: '11px', display: 'block' }}>创建IP</Text>
+            <Space size={4} style={{ marginTop: '2px' }}>
+              <GlobalOutlined style={{ fontSize: '12px', color: 'var(--text-tertiary)' }} />
+              <Text style={{ fontSize: '12px', fontFamily: 'monospace' }}>
+                {link.created_ip || '-'}
+              </Text>
+            </Space>
+          </div>
+          <div>
+            <Text type="secondary" style={{ fontSize: '11px', display: 'block' }}>创建时间</Text>
+            <Text style={{ fontSize: '12px', marginTop: '2px', display: 'block' }}>
+              {new Date(link.created_at).toLocaleDateString('zh-CN', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <Space style={{ width: '100%', justifyContent: 'flex-end' }} size={8}>
+          <Button
+            type="primary"
+            size="small"
+            icon={<BarChartOutlined />}
+            onClick={() => navigate(`/admin/links/${link.short_code}+`)}
+            style={{
+              borderRadius: '6px',
+              fontWeight: 600,
+            }}
+          >
+            统计
+          </Button>
+          <Popconfirm
+            title="删除链接"
+            description="确定要删除这个短链接吗？"
+            onConfirm={() => onDelete(link.id)}
+            okText="删除"
+            cancelText="取消"
+            okButtonProps={{ danger: true }}
+          >
+            <Button
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              style={{
+                borderRadius: '6px',
+                fontWeight: 600,
+              }}
+            >
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
+      </Card>
+    );
+  };
+
+  // Mobile view
+  if (isMobile) {
+    return (
+      <>
+        {contextHolder}
+        <div style={{ padding: '0' }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <Text type="secondary">加载中...</Text>
+            </div>
+          ) : links.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <Text type="secondary">暂无数据</Text>
+            </div>
+          ) : (
+            <>
+              {links.map(renderMobileCard)}
+              <Pagination
+                current={pagination.page}
+                pageSize={pagination.limit}
+                total={pagination.total}
+                onChange={onPageChange}
+                showTotal={(total) => `共 ${total} 条`}
+                style={{
+                  textAlign: 'center',
+                  marginTop: '16px',
+                  paddingBottom: '16px',
+                }}
+                showSizeChanger={false}
+                simple
+              />
+            </>
+          )}
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

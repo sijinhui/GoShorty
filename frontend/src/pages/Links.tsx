@@ -6,6 +6,7 @@ import { getLinks, deleteLink } from '../api/links';
 import { getExpiredLinks } from '../api/linkExpiry';
 import LinkTable from '../components/links/LinkTable';
 import type { APIError } from '../types/api';
+import { useResponsive } from '../hooks/useResponsive';
 
 const { Title } = Typography;
 
@@ -13,6 +14,7 @@ export default function Links() {
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
   const [messageApi, contextHolder] = message.useMessage();
+  const { isMobile } = useResponsive();
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['links', page],
@@ -57,10 +59,10 @@ export default function Links() {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '16px' : '24px', maxWidth: '1200px', margin: '0 auto' }}>
       {contextHolder}
 
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <Title level={2} style={{ margin: 0 }}>链接管理</Title>
         <Space>
           <Tooltip title="刷新列表">

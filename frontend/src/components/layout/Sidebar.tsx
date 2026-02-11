@@ -1,13 +1,28 @@
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Drawer } from 'antd';
 import { useThemeStore } from '../../store/themeStore';
 
 interface SidebarProps {
   onLogout: () => void;
+  isMobile?: boolean;
+  isTablet?: boolean;
+  drawerOpen?: boolean;
+  onDrawerClose?: () => void;
 }
 
-export default function Sidebar({ onLogout }: SidebarProps) {
+export default function Sidebar({ onLogout, isMobile, isTablet, drawerOpen, onDrawerClose }: SidebarProps) {
   const location = useLocation();
   const { theme, toggleTheme } = useThemeStore();
+
+  const compact = isMobile || isTablet;
+
+  // Close drawer on route change
+  useEffect(() => {
+    if (compact && drawerOpen) {
+      onDrawerClose?.();
+    }
+  }, [location.pathname]);
 
   const menuItems = [
     { path: '/admin/dashboard', label: '📊 仪表盘' },
@@ -20,48 +35,32 @@ export default function Sidebar({ onLogout }: SidebarProps) {
     if (path === '/admin/links') {
       return location.pathname === path || location.pathname.startsWith('/admin/links/');
     }
-
     return location.pathname === path;
   };
 
-  return (
-    <div style={{
-      width: '250px',
-      background: 'var(--bg-elevated)',
-      borderRight: '1px solid var(--border-subtle)',
-      color: 'var(--text-primary)',
-      height: '100vh',
-      position: 'fixed',
-      left: 0,
-      top: 0,
-      padding: '1.5rem 0',
-      display: 'flex',
-      flexDirection: 'column',
-      boxShadow: 'var(--shadow-lg)',
-    }}>
-      <div style={{
-        padding: '0 1.5rem',
-        marginBottom: '2rem',
-        animation: 'fadeIn 0.5s ease-out',
-      }}>
-        <h1 style={{
-          fontSize: '1.5rem',
-          fontWeight: '800',
-          fontFamily: 'var(--font-heading)',
-          letterSpacing: '-0.01em',
-          color: 'var(--text-primary)',
-        }}>
-          GoShorty
-        </h1>
-        <p style={{
-          fontSize: '0.875rem',
-          color: 'var(--text-secondary)',
-          marginTop: '0.25rem',
-          fontFamily: 'var(--font-body)',
-        }}>
-          短链接管理系统
-        </p>
-      </div>
+  const sidebarContent = (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {!compact && (
+        <div style={{ padding: '0 1.5rem', marginBottom: '2rem', animation: 'fadeIn 0.5s ease-out' }}>
+          <h1 style={{
+            fontSize: '1.5rem',
+            fontWeight: '800',
+            fontFamily: 'var(--font-heading)',
+            letterSpacing: '-0.01em',
+            color: 'var(--text-primary)',
+          }}>
+            GoShorty
+          </h1>
+          <p style={{
+            fontSize: '0.875rem',
+            color: 'var(--text-secondary)',
+            marginTop: '0.25rem',
+            fontFamily: 'var(--font-body)',
+          }}>
+            短链接管理系统
+          </p>
+        </div>
+      )}
 
       <nav style={{ flex: 1 }}>
         {menuItems.map((item, index) => {
@@ -81,7 +80,7 @@ export default function Sidebar({ onLogout }: SidebarProps) {
                 fontFamily: 'var(--font-body)',
                 fontWeight: isActive ? '600' : '500',
                 fontSize: '0.9375rem',
-                animation: `slideIn 0.3s ease-out ${index * 0.05}s backwards`,
+                animation: compact ? 'none' : `slideIn 0.3s ease-out ${index * 0.05}s backwards`,
               }}
               onMouseEnter={(e) => {
                 if (!isActive) {
@@ -101,16 +100,14 @@ export default function Sidebar({ onLogout }: SidebarProps) {
           );
         })}
       </nav>
-
       <div style={{
         padding: '0 1.5rem',
         marginTop: 'auto',
-        marginBottom: '2rem',
+        marginBottom: compact ? '1rem' : '2rem',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.75rem',
       }}>
-        {/* 主题切换按钮 */}
         <button
           onClick={(e) => toggleTheme(e)}
           style={{
@@ -144,7 +141,6 @@ export default function Sidebar({ onLogout }: SidebarProps) {
           {theme === 'dark' ? '☀️' : '🌙'} {theme === 'dark' ? '亮色模式' : '暗色模式'}
         </button>
 
-        {/* 退出登录按钮 */}
         <button
           onClick={onLogout}
           style={{
@@ -174,6 +170,47 @@ export default function Sidebar({ onLogout }: SidebarProps) {
           🚪 退出登录
         </button>
       </div>
+    </div>
+  );
+
+  if (compact) {
+    return (
+      <Drawer
+        title="GoShorty"
+        placement="left"
+        onClose={onDrawerClose}
+        open={drawerOpen}
+        width={280}
+        styles={{
+          body: { padding: 0 },
+          header: {
+            fontFamily: 'var(--font-heading)',
+            fontWeight: 800,
+            borderBottom: '1px solid var(--border-subtle)',
+          },
+        }}
+      >
+        {sidebarContent}
+      </Drawer>
+    );
+  }
+
+  return (
+    <div style={{
+      width: '250px',
+      background: 'var(--bg-elevated)',
+      borderRight: '1px solid var(--border-subtle)',
+      color: 'var(--text-primary)',
+      height: '100vh',
+      position: 'fixed',
+      left: 0,
+      top: 0,
+      padding: '1.5rem 0',
+      display: 'flex',
+      flexDirection: 'column',
+      boxShadow: 'var(--shadow-lg)',
+    }}>
+      {sidebarContent}
     </div>
   );
 }

@@ -77,7 +77,16 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
             colorTextDescription: theme === 'dark' ? '#a0a0a0' : '#6b7280',
             colorLink: theme === 'dark' ? '#7a8eb8' : '#2563eb',
             colorLinkHover: theme === 'dark' ? '#8a9ec8' : '#1d4ed8',
-          }
+          },
+          List: {
+            colorBgContainer: theme === 'dark' ? '#1e1e1e' : '#ffffff',
+          },
+          Divider: {
+            colorSplit: theme === 'dark' ? '#3a3a3a' : '#e5e7eb',
+          },
+          Badge: {
+            colorBgContainer: theme === 'dark' ? '#1e1e1e' : '#ffffff',
+          },
         }
       }}
     >

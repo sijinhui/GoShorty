@@ -3,12 +3,14 @@ import type { FormEvent } from 'react';
 import { createLink } from '../../api/links';
 import type { CreateLinkRequest } from '../../types/api';
 import CopyButton from '../common/CopyButton';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface CreateLinkFormProps {
   onSuccess?: () => void;
 }
 
 export default function CreateLinkForm({ onSuccess }: CreateLinkFormProps) {
+  const { isMobile } = useResponsive();
   const [formData, setFormData] = useState<CreateLinkRequest>({
     original_url: '',
     short_code: '',
@@ -163,7 +165,7 @@ export default function CreateLinkForm({ onSuccess }: CreateLinkFormProps) {
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
           <div>
             <label style={{
               display: 'block',
