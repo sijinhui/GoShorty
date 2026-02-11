@@ -1,4 +1,4 @@
-import { Table, Tag, Typography, Button, Popconfirm, Space, Tooltip, Badge, message, List, Card, Divider, Pagination } from 'antd';
+import { Table, Tag, Typography, Button, Popconfirm, Space, Tooltip, Badge, message, Card, Divider, Pagination } from 'antd';
 import { DeleteOutlined, ClockCircleOutlined, GlobalOutlined, LinkOutlined, BarChartOutlined, CopyOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { Link, PaginationMeta } from '../../types/api';
@@ -6,7 +6,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { getShortLinkUrl } from '../../utils/url';
 import { useResponsive } from '../../hooks/useResponsive';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 interface LinkTableProps {
   links: Link[];
