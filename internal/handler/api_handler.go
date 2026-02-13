@@ -144,13 +144,20 @@ func (h *APIHandler) GetLinks(c *gin.Context) {
 		return
 	}
 
+	// 获取总数
+	total, err := h.linkService.CountLinks(c.Request.Context())
+	if err != nil {
+		h.logger.Error("Failed to count links", zap.Error(err))
+		RespondError(c, domain.ErrInternalServer)
+		return
+	}
+
 	// 计算分页信息
-	total := int64(len(links)) // 简化版本，实际应该查询总数
 	totalPages := int(total) / limit
 	if int(total)%limit > 0 {
 		totalPages++
 	}
-	hasNext := len(links) == limit
+	hasNext := page < totalPages
 	hasPrev := page > 1
 
 	pagination := PaginationMeta{

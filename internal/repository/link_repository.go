@@ -22,6 +22,7 @@ type LinkRepository interface {
 	DeleteByShortCodes(ctx context.Context, shortCodes []string) (int64, error)
 	List(ctx context.Context, limit, offset int) ([]*domain.Link, error)
 	ListAll(ctx context.Context) ([]*domain.Link, error)
+	Count(ctx context.Context) (int64, error)
 	IncrementClickCount(ctx context.Context, id int64) error
 	DeleteExpired(ctx context.Context, before time.Time) error
 	ExistsShortCode(ctx context.Context, shortCode string) (bool, error)
@@ -279,4 +280,17 @@ func (r *PostgresLinkRepository) ExistsShortCode(ctx context.Context, shortCode 
 	}
 
 	return exists, nil
+}
+
+// Count 获取链接总数
+func (r *PostgresLinkRepository) Count(ctx context.Context) (int64, error) {
+	query := `SELECT COUNT(*) FROM links`
+
+	var count int64
+	err := r.pool.QueryRow(ctx, query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

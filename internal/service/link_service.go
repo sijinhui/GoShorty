@@ -21,6 +21,7 @@ type LinkService interface {
 	UpdateLink(ctx context.Context, req *UpdateLinkRequest) error
 	DeleteLink(ctx context.Context, id int64, userID int) error
 	ListLinks(ctx context.Context, limit, offset int) ([]*domain.Link, error)
+	CountLinks(ctx context.Context) (int64, error)
 	IncrementClickCount(ctx context.Context, id int64) error
 	GetDashboardStats(ctx context.Context) (map[string]interface{}, error)
 }
@@ -357,6 +358,11 @@ func (s *linkService) ListLinks(ctx context.Context, limit, offset int) ([]*doma
 		return s.linkRepo.ListAll(ctx)
 	}
 	return s.linkRepo.List(ctx, limit, offset)
+}
+
+// CountLinks 获取链接总数
+func (s *linkService) CountLinks(ctx context.Context) (int64, error) {
+	return s.linkRepo.Count(ctx)
 }
 
 // IncrementClickCount 增加点击计数
