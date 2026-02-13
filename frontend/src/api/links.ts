@@ -20,9 +20,9 @@ export const createLink = async (data: CreateLinkRequest): Promise<APIResponse<C
 };
 
 // 获取链接列表
-export const getLinks = async (page = 1, limit = 20): Promise<PaginatedResponse<Link>> => {
+export const getLinks = async (page = 1, limit = 10, keyword?: string): Promise<PaginatedResponse<Link>> => {
   return apiClient.get('/links', {
-    params: { page, limit },
+    params: { page, limit, keyword },
   });
 };
 

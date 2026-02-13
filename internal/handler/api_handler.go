@@ -128,6 +128,8 @@ func (h *APIHandler) GetLinks(c *gin.Context) {
 	// 解析分页参数
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	keyword := c.Query("keyword")
+
 	if page < 1 {
 		page = 1
 	}
@@ -136,20 +138,43 @@ func (h *APIHandler) GetLinks(c *gin.Context) {
 	}
 	offset := (page - 1) * limit
 
-	// 获取链接列表
-	links, err := h.linkService.ListLinks(c.Request.Context(), limit, offset)
-	if err != nil {
-		h.logger.Error("Failed to get links", zap.Error(err))
-		RespondError(c, domain.ErrInternalServer)
-		return
-	}
+	var links []*domain.Link
+	var total int64
+	var err error
 
-	// 获取总数
-	total, err := h.linkService.CountLinks(c.Request.Context())
-	if err != nil {
-		h.logger.Error("Failed to count links", zap.Error(err))
-		RespondError(c, domain.ErrInternalServer)
-		return
+	// 根据是否有搜索关键词选择不同的查询方法
+	if keyword != "" {
+		// 搜索链接
+		links, err = h.linkService.SearchLinks(c.Request.Context(), keyword, limit, offset)
+		if err != nil {
+			h.logger.Error("Failed to search links", zap.Error(err))
+			RespondError(c, domain.ErrInternalServer)
+			return
+		}
+
+		// 获取搜索结果总数
+		total, err = h.linkService.CountSearchLinks(c.Request.Context(), keyword)
+		if err != nil {
+			h.logger.Error("Failed to count search links", zap.Error(err))
+			RespondError(c, domain.ErrInternalServer)
+			return
+		}
+	} else {
+		// 获取链接列表
+		links, err = h.linkService.ListLinks(c.Request.Context(), limit, offset)
+		if err != nil {
+			h.logger.Error("Failed to get links", zap.Error(err))
+			RespondError(c, domain.ErrInternalServer)
+			return
+		}
+
+		// 获取总数
+		total, err = h.linkService.CountLinks(c.Request.Context())
+		if err != nil {
+			h.logger.Error("Failed to count links", zap.Error(err))
+			RespondError(c, domain.ErrInternalServer)
+			return
+		}
 	}
 
 	// 计算分页信息

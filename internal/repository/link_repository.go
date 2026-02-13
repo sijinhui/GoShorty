@@ -22,7 +22,9 @@ type LinkRepository interface {
 	DeleteByShortCodes(ctx context.Context, shortCodes []string) (int64, error)
 	List(ctx context.Context, limit, offset int) ([]*domain.Link, error)
 	ListAll(ctx context.Context) ([]*domain.Link, error)
+	Search(ctx context.Context, keyword string, limit, offset int) ([]*domain.Link, error)
 	Count(ctx context.Context) (int64, error)
+	CountSearch(ctx context.Context, keyword string) (int64, error)
 	IncrementClickCount(ctx context.Context, id int64) error
 	DeleteExpired(ctx context.Context, before time.Time) error
 	ExistsShortCode(ctx context.Context, shortCode string) (bool, error)
@@ -288,6 +290,45 @@ func (r *PostgresLinkRepository) Count(ctx context.Context) (int64, error) {
 
 	var count int64
 	err := r.pool.QueryRow(ctx, query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// Search 搜索链接
+func (r *PostgresLinkRepository) Search(ctx context.Context, keyword string, limit, offset int) ([]*domain.Link, error) {
+	query := `SELECT ` + linkColumns + ` FROM links
+		WHERE short_code ILIKE $1 OR original_url ILIKE $1 OR title ILIKE $1
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3`
+
+	rows, err := r.pool.Query(ctx, query, "%"+keyword+"%", limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var links []*domain.Link
+	for rows.Next() {
+		link, err := scanLink(rows)
+		if err != nil {
+			return nil, err
+		}
+		links = append(links, link)
+	}
+
+	return links, rows.Err()
+}
+
+// CountSearch 获取搜索结果总数
+func (r *PostgresLinkRepository) CountSearch(ctx context.Context, keyword string) (int64, error) {
+	query := `SELECT COUNT(*) FROM links
+		WHERE short_code ILIKE $1 OR original_url ILIKE $1 OR title ILIKE $1`
+
+	var count int64
+	err := r.pool.QueryRow(ctx, query, "%"+keyword+"%").Scan(&count)
 	if err != nil {
 		return 0, err
 	}

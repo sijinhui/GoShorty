@@ -21,7 +21,9 @@ type LinkService interface {
 	UpdateLink(ctx context.Context, req *UpdateLinkRequest) error
 	DeleteLink(ctx context.Context, id int64, userID int) error
 	ListLinks(ctx context.Context, limit, offset int) ([]*domain.Link, error)
+	SearchLinks(ctx context.Context, keyword string, limit, offset int) ([]*domain.Link, error)
 	CountLinks(ctx context.Context) (int64, error)
+	CountSearchLinks(ctx context.Context, keyword string) (int64, error)
 	IncrementClickCount(ctx context.Context, id int64) error
 	GetDashboardStats(ctx context.Context) (map[string]interface{}, error)
 }
@@ -363,6 +365,16 @@ func (s *linkService) ListLinks(ctx context.Context, limit, offset int) ([]*doma
 // CountLinks 获取链接总数
 func (s *linkService) CountLinks(ctx context.Context) (int64, error) {
 	return s.linkRepo.Count(ctx)
+}
+
+// SearchLinks 搜索链接
+func (s *linkService) SearchLinks(ctx context.Context, keyword string, limit, offset int) ([]*domain.Link, error) {
+	return s.linkRepo.Search(ctx, keyword, limit, offset)
+}
+
+// CountSearchLinks 获取搜索结果总数
+func (s *linkService) CountSearchLinks(ctx context.Context, keyword string) (int64, error) {
+	return s.linkRepo.CountSearch(ctx, keyword)
 }
 
 // IncrementClickCount 增加点击计数

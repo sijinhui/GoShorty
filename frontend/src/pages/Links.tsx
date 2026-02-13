@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { Typography, message, Card, Button, Space, Tooltip } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import { Typography, message, Card, Button, Space, Tooltip, Input } from 'antd';
+import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { getLinks, deleteLink } from '../api/links';
 import { getExpiredLinks } from '../api/linkExpiry';
 import LinkTable from '../components/links/LinkTable';
@@ -12,13 +12,15 @@ const { Title } = Typography;
 
 export default function Links() {
   const [page, setPage] = useState(1);
+  const [keyword, setKeyword] = useState('');
+  const [searchValue, setSearchValue] = useState('');
   const queryClient = useQueryClient();
   const [messageApi, contextHolder] = message.useMessage();
   const { isMobile } = useResponsive();
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ['links', page],
-    queryFn: () => getLinks(page, 10),
+    queryKey: ['links', page, keyword],
+    queryFn: () => getLinks(page, 10, keyword || undefined),
     placeholderData: keepPreviousData,
     staleTime: 30000,
   });
@@ -27,12 +29,25 @@ export default function Links() {
   useEffect(() => {
     if (data?.pagination.has_next) {
       queryClient.prefetchQuery({
-        queryKey: ['links', page + 1],
-        queryFn: () => getLinks(page + 1, 10),
+        queryKey: ['links', page + 1, keyword],
+        queryFn: () => getLinks(page + 1, 10, keyword || undefined),
         staleTime: 30000,
       });
     }
-  }, [data, page, queryClient]);
+  }, [data, page, keyword, queryClient]);
+
+  // 搜索时重置到第一页
+  const handleSearch = (value: string) => {
+    setKeyword(value);
+    setPage(1);
+  };
+
+  // 清空搜索
+  const handleClearSearch = () => {
+    setSearchValue('');
+    setKeyword('');
+    setPage(1);
+  };
 
   // 获取所有有过期设置的链接
   const { data: expiryData } = useQuery({
@@ -78,6 +93,16 @@ export default function Links() {
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <Title level={2} style={{ margin: 0 }}>链接管理</Title>
         <Space>
+          <Input.Search
+            placeholder="搜索短码、原始链接或标题"
+            allowClear
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            onSearch={handleSearch}
+            onClear={handleClearSearch}
+            style={{ width: isMobile ? '200px' : '300px' }}
+            prefix={<SearchOutlined />}
+          />
           <Tooltip title="刷新列表">
             <Button
               icon={<ReloadOutlined spin={isFetching} />}
