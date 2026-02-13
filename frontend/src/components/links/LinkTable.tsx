@@ -379,7 +379,10 @@ export default function LinkTable({
         columns={columns}
         dataSource={links}
         rowKey="id"
-        loading={loading}
+        loading={{
+          spinning: loading,
+          tip: '加载中...',
+        }}
         pagination={{
           current: pagination.page,
           pageSize: pagination.limit,
@@ -387,6 +390,7 @@ export default function LinkTable({
           onChange: onPageChange,
           showTotal: (total) => `共 ${total} 条链接`,
           position: ['bottomCenter'],
+          showSizeChanger: false,
         }}
         scroll={{ x: 1000 }}
       />

@@ -454,3 +454,31 @@ h1, h2, h3, h4, h5, h6 {
 .ant-drawer-content-wrapper {
   transition: transform var(--transition-slow) !important;
 }
+
+/* Table loading state optimization */
+.ant-spin-nested-loading > div > .ant-spin {
+  max-height: none !important;
+}
+
+.ant-table-wrapper .ant-spin-container {
+  transition: opacity var(--transition-base) !important;
+}
+
+.ant-table-wrapper .ant-spin-blur {
+  opacity: 0.7 !important;
+}
+
+.ant-table-wrapper .ant-spin-blur::after {
+  opacity: 0.15 !important;
+}
+
+/* Pagination smooth transition */
+.ant-pagination {
+  transition: all var(--transition-base) !important;
+}
+
+.ant-pagination-item,
+.ant-pagination-prev,
+.ant-pagination-next {
+  transition: all var(--transition-fast) !important;
+}

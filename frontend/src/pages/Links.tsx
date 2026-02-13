@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { Typography, message, Card, Button, Space, Tooltip } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { getLinks, deleteLink } from '../api/links';
@@ -18,8 +18,21 @@ export default function Links() {
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['links', page],
-    queryFn: () => getLinks(page, 20),
+    queryFn: () => getLinks(page, 10),
+    placeholderData: keepPreviousData,
+    staleTime: 30000,
   });
+
+  // 预取下一页数据
+  useEffect(() => {
+    if (data?.pagination.has_next) {
+      queryClient.prefetchQuery({
+        queryKey: ['links', page + 1],
+        queryFn: () => getLinks(page + 1, 10),
+        staleTime: 30000,
+      });
+    }
+  }, [data, page, queryClient]);
 
   // 获取所有有过期设置的链接
   const { data: expiryData } = useQuery({
@@ -87,7 +100,7 @@ export default function Links() {
             onPageChange={setPage}
             onDelete={(id) => deleteMutation.mutate(id)}
             expiryShortCodes={expiryShortCodes}
-            loading={isLoading}
+            loading={isLoading || isFetching}
           />
         )}
       </Card>
