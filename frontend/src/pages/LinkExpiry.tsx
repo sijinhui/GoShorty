@@ -14,7 +14,7 @@ import {
   Pagination
 } from 'antd';
 import { DeleteOutlined, ExclamationCircleOutlined, ReloadOutlined, CloseCircleOutlined, CopyOutlined, ClockCircleOutlined, CalendarOutlined } from '@ant-design/icons';
-import { getExpiredLinks, deleteExpiredLink, deleteAllExpiredLinks, cancelExpiry } from '../api/linkExpiry';
+import { getExpiredLinks, deleteExpiredLink, deleteAllExpiredLinks, batchDeleteExpiredLinks, cancelExpiry } from '../api/linkExpiry';
 import { getShortLinkUrl } from '../utils/url';
 import type { LinkExpiry } from '../api/linkExpiry';
 import type { ColumnsType } from 'antd/es/table';
@@ -28,6 +28,7 @@ export default function LinkExpiryPage() {
   const pageSize = 10;
   const offset = (page - 1) * pageSize;
   const { isMobile } = useResponsive();
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const queryClient = useQueryClient();
   const [messageApi, contextHolder] = message.useMessage();
@@ -54,6 +55,20 @@ export default function LinkExpiryPage() {
     onSuccess: (result) => {
       messageApi.success(`成功删除 ${result.data?.deleted_count || 0} 条过期链接`);
       setPage(1);
+      setSelectedRowKeys([]);
+      queryClient.invalidateQueries({ queryKey: ['expired-links'] });
+      queryClient.invalidateQueries({ queryKey: ['links'] });
+    },
+    onError: (error: APIError) => {
+      messageApi.error(error?.error || '批量删除失败');
+    },
+  });
+
+  const batchDeleteMutation = useMutation({
+    mutationFn: batchDeleteExpiredLinks,
+    onSuccess: (result) => {
+      messageApi.success(`成功删除 ${result.data?.deleted_count || 0} 条链接`);
+      setSelectedRowKeys([]);
       queryClient.invalidateQueries({ queryKey: ['expired-links'] });
       queryClient.invalidateQueries({ queryKey: ['links'] });
     },
@@ -405,7 +420,36 @@ export default function LinkExpiryPage() {
 
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <Title level={2} style={{ margin: 0 }}>链接过期管理</Title>
-        <Space>
+        <Space wrap>
+          {selectedRowKeys.length > 0 && (
+            <>
+              <Typography.Text style={{ whiteSpace: 'nowrap' }}>
+                已选 <strong>{selectedRowKeys.length}</strong> 条
+              </Typography.Text>
+              <Popconfirm
+                title="确认批量删除"
+                description={`确定要删除选中的 ${selectedRowKeys.length} 条链接吗？此操作将同时删除链接本身，不可撤销！`}
+                onConfirm={() => {
+                  const shortCodes = expiries
+                    .filter(e => selectedRowKeys.includes(e.id))
+                    .map(e => e.short_code);
+                  batchDeleteMutation.mutate(shortCodes);
+                }}
+                okText="确认删除"
+                cancelText="取消"
+                okButtonProps={{ danger: true }}
+              >
+                <Button
+                  danger
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  loading={batchDeleteMutation.isPending}
+                >
+                  批量删除
+                </Button>
+              </Popconfirm>
+            </>
+          )}
           <Tooltip title="刷新列表">
             <Button
               icon={<ReloadOutlined spin={isFetching} />}
@@ -444,6 +488,11 @@ export default function LinkExpiryPage() {
           columns={columns}
           dataSource={expiries}
           rowKey="id"
+          rowSelection={{
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+            preserveSelectedRowKeys: false,
+          }}
           loading={isLoading}
           pagination={{
             current: page,

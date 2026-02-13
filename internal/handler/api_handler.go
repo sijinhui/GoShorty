@@ -475,3 +475,36 @@ func (h *APIHandler) ImportLinks(c *gin.Context) {
 	message := fmt.Sprintf("导入完成：成功 %d 条，失败 %d 条", successCount, failCount)
 	RespondSuccess(c, result, message)
 }
+
+// BatchDeleteLinks 批量删除链接
+func (h *APIHandler) BatchDeleteLinks(c *gin.Context) {
+	var req struct {
+		IDs []int64 `json:"ids" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		RespondError(c, domain.ErrInternalServer)
+		return
+	}
+
+	if len(req.IDs) == 0 {
+		RespondError(c, domain.ErrInternalServer)
+		return
+	}
+
+	// 从上下文获取用户ID
+	userID, exists := c.Get("user_id")
+	if !exists {
+		RespondError(c, domain.ErrUnauthorized)
+		return
+	}
+
+	count, err := h.linkService.BatchDeleteLinks(c.Request.Context(), req.IDs, userID.(int))
+	if err != nil {
+		h.logger.Error("Failed to batch delete links", zap.Error(err))
+		RespondError(c, domain.ErrInternalServer)
+		return
+	}
+
+	RespondSuccess(c, gin.H{"deleted_count": count}, fmt.Sprintf("成功删除 %d 条链接", count))
+}

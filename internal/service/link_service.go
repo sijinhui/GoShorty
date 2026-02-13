@@ -20,6 +20,7 @@ type LinkService interface {
 	GetByID(ctx context.Context, id int64) (*domain.Link, error)
 	UpdateLink(ctx context.Context, req *UpdateLinkRequest) error
 	DeleteLink(ctx context.Context, id int64, userID int) error
+	BatchDeleteLinks(ctx context.Context, ids []int64, userID int) (int64, error)
 	ListLinks(ctx context.Context, limit, offset int) ([]*domain.Link, error)
 	SearchLinks(ctx context.Context, keyword string, limit, offset int) ([]*domain.Link, error)
 	CountLinks(ctx context.Context) (int64, error)
@@ -351,6 +352,38 @@ func (s *linkService) DeleteLink(ctx context.Context, id int64, userID int) erro
 
 	s.logger.Info("link deleted", zap.Int64("id", id))
 	return nil
+}
+
+// BatchDeleteLinks 批量删除链接
+func (s *linkService) BatchDeleteLinks(ctx context.Context, ids []int64, userID int) (int64, error) {
+	if len(ids) == 0 {
+		return 0, nil
+	}
+
+	// 获取所有链接的短码
+	var shortCodes []string
+	for _, id := range ids {
+		link, err := s.linkRepo.GetByID(ctx, id)
+		if err != nil {
+			s.logger.Warn("failed to get link for batch delete", zap.Int64("id", id), zap.Error(err))
+			continue
+		}
+		shortCodes = append(shortCodes, link.ShortCode)
+	}
+
+	if len(shortCodes) == 0 {
+		return 0, errors.New("no valid links to delete")
+	}
+
+	// 批量删除
+	count, err := s.linkRepo.DeleteByShortCodes(ctx, shortCodes)
+	if err != nil {
+		s.logger.Error("failed to batch delete links", zap.Error(err))
+		return 0, err
+	}
+
+	s.logger.Info("links batch deleted", zap.Int64("count", count), zap.Int("user_id", userID))
+	return count, nil
 }
 
 // ListLinks 获取链接列表

@@ -43,6 +43,11 @@ export const deleteAllExpiredLinks = async (): Promise<APIResponse<DeleteAllExpi
   return apiClient.delete('/link-expiry/batch/all');
 };
 
+// 批量删除选中的过期记录
+export const batchDeleteExpiredLinks = async (shortCodes: string[]): Promise<APIResponse<DeleteAllExpiredResponse>> => {
+  return apiClient.post('/link-expiry/batch-delete', { short_codes: shortCodes });
+};
+
 // 取消链接的过期设置（只删除过期记录，保留链接）
 export const cancelExpiry = async (shortCode: string): Promise<APIResponse> => {
   return apiClient.post(`/link-expiry/${shortCode}/cancel`);

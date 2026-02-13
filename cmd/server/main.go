@@ -167,6 +167,7 @@ func main() {
 			api.GET("/links/export", apiHandler.ExportLinks)
 			api.POST("/links/import", apiHandler.ImportLinks)
 			api.DELETE("/links/:id", apiHandler.DeleteLink)
+			api.POST("/links/batch-delete", apiHandler.BatchDeleteLinks)
 			api.GET("/links/:shortCode/analytics", apiHandler.GetLinkAnalyticsByShortCode)
 			api.GET("/analytics/link", apiHandler.GetLinkAnalytics)
 			api.GET("/settings", settingsHandler.GetSettings)
@@ -178,6 +179,7 @@ func main() {
 			api.GET("/link-expiry", linkExpiryHandler.HandleListExpired)
 			api.DELETE("/link-expiry/:shortCode", linkExpiryHandler.HandleDeleteExpired)
 			api.DELETE("/link-expiry/batch/all", linkExpiryHandler.HandleDeleteAllExpired)
+			api.POST("/link-expiry/batch-delete", linkExpiryHandler.HandleBatchDeleteExpired)
 			api.POST("/link-expiry/:shortCode/cancel", linkExpiryHandler.HandleCancelExpiry)
 		}
 	}

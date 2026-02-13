@@ -94,6 +94,34 @@ func (h *LinkExpiryHandler) HandleDeleteAllExpired(c *gin.Context) {
 	}, "批量删除成功")
 }
 
+// HandleBatchDeleteExpired 批量删除选中的过期记录
+func (h *LinkExpiryHandler) HandleBatchDeleteExpired(c *gin.Context) {
+	var req struct {
+		ShortCodes []string `json:"short_codes" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		RespondError(c, domain.ErrInternalServer)
+		return
+	}
+
+	if len(req.ShortCodes) == 0 {
+		RespondError(c, domain.ErrInternalServer)
+		return
+	}
+
+	count, err := h.linkExpiryService.BatchDeleteExpired(c.Request.Context(), req.ShortCodes)
+	if err != nil {
+		h.logger.Error("failed to batch delete expired links", zap.Error(err))
+		RespondError(c, domain.ErrInternalServer)
+		return
+	}
+
+	RespondSuccess(c, gin.H{
+		"deleted_count": count,
+	}, "批量删除成功")
+}
+
 // HandleCancelExpiry 取消链接的过期设置
 func (h *LinkExpiryHandler) HandleCancelExpiry(c *gin.Context) {
 	shortCode := c.Param("shortCode")

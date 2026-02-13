@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { Typography, message, Card, Button, Space, Tooltip, Input } from 'antd';
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
-import { getLinks, deleteLink } from '../api/links';
+import { Typography, message, Card, Button, Space, Tooltip, Input, Popconfirm } from 'antd';
+import { ReloadOutlined, SearchOutlined, DeleteOutlined } from '@ant-design/icons';
+import { getLinks, deleteLink, batchDeleteLinks } from '../api/links';
 import { getExpiredLinks } from '../api/linkExpiry';
 import LinkTable from '../components/links/LinkTable';
 import type { APIError } from '../types/api';
@@ -14,6 +14,7 @@ export default function Links() {
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState('');
   const [searchValue, setSearchValue] = useState('');
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const queryClient = useQueryClient();
   const [messageApi, contextHolder] = message.useMessage();
   const { isMobile } = useResponsive();
@@ -66,6 +67,18 @@ export default function Links() {
     },
   });
 
+  const batchDeleteMutation = useMutation({
+    mutationFn: batchDeleteLinks,
+    onSuccess: (response) => {
+      messageApi.success(response.message || '批量删除成功');
+      setSelectedRowKeys([]);
+      queryClient.invalidateQueries({ queryKey: ['links'] });
+    },
+    onError: () => {
+      messageApi.error('批量删除失败');
+    },
+  });
+
   // 创建短码集合，用于快速查找
   const expiryShortCodes = new Set(
     expiryData?.data?.expiries?.map(e => e.short_code) || []
@@ -92,7 +105,31 @@ export default function Links() {
 
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <Title level={2} style={{ margin: 0 }}>链接管理</Title>
-        <Space>
+        <Space wrap>
+          {selectedRowKeys.length > 0 && (
+            <>
+              <Typography.Text style={{ whiteSpace: 'nowrap' }}>
+                已选 <strong>{selectedRowKeys.length}</strong> 条
+              </Typography.Text>
+              <Popconfirm
+                title="确认批量删除"
+                description={`确定要删除选中的 ${selectedRowKeys.length} 条链接吗？此操作不可恢复。`}
+                onConfirm={() => batchDeleteMutation.mutate(selectedRowKeys as number[])}
+                okText="确认删除"
+                cancelText="取消"
+                okButtonProps={{ danger: true }}
+              >
+                <Button
+                  danger
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  loading={batchDeleteMutation.isPending}
+                >
+                  批量删除
+                </Button>
+              </Popconfirm>
+            </>
+          )}
           <Input.Search
             placeholder="搜索短码、原始链接或标题"
             allowClear
@@ -126,6 +163,8 @@ export default function Links() {
             onDelete={(id) => deleteMutation.mutate(id)}
             expiryShortCodes={expiryShortCodes}
             loading={isLoading || isFetching}
+            selectedRowKeys={selectedRowKeys}
+            onSelectionChange={setSelectedRowKeys}
           />
         )}
       </Card>

@@ -14,6 +14,7 @@ type LinkExpiryService interface {
 	ListExpired(ctx context.Context, limit, offset int) ([]*domain.LinkExpiry, error)
 	DeleteExpired(ctx context.Context, shortCode string) error
 	DeleteAllExpired(ctx context.Context) (int64, error)
+	BatchDeleteExpired(ctx context.Context, shortCodes []string) (int64, error)
 	CancelExpiry(ctx context.Context, shortCode string) error
 	GetExpiredCount(ctx context.Context) (int64, error)
 }
@@ -127,6 +128,37 @@ func (s *linkExpiryService) DeleteAllExpired(ctx context.Context) (int64, error)
 		zap.Int64("deleted_links", deletedLinks),
 	)
 	return count, nil
+}
+
+// BatchDeleteExpired 批量删除选中的过期记录及其对应的链接
+func (s *linkExpiryService) BatchDeleteExpired(ctx context.Context, shortCodes []string) (int64, error) {
+	if len(shortCodes) == 0 {
+		return 0, nil
+	}
+
+	// 先删除 links 表中的对应链接
+	deletedLinks, err := s.linkRepo.DeleteByShortCodes(ctx, shortCodes)
+	if err != nil {
+		s.logger.Error("failed to delete links by short codes", zap.Error(err))
+		// 继续删除过期记录
+	}
+
+	// 再删除过期记录
+	var deletedCount int64
+	for _, shortCode := range shortCodes {
+		if err := s.linkExpiryRepo.Delete(ctx, shortCode); err != nil {
+			s.logger.Warn("failed to delete expiry record", zap.String("short_code", shortCode), zap.Error(err))
+		} else {
+			deletedCount++
+		}
+	}
+
+	s.logger.Info("batch deleted expired links",
+		zap.Int64("expiry_records", deletedCount),
+		zap.Int64("deleted_links", deletedLinks),
+		zap.Int("requested", len(shortCodes)),
+	)
+	return deletedCount, nil
 }
 
 // GetExpiredCount 获取真正已过期的链接数量

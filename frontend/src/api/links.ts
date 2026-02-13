@@ -31,6 +31,11 @@ export const deleteLink = async (id: number): Promise<APIResponse> => {
   return apiClient.delete(`/links/${id}`);
 };
 
+// 批量删除链接
+export const batchDeleteLinks = async (ids: number[]): Promise<APIResponse<{ deleted_count: number }>> => {
+  return apiClient.post('/links/batch-delete', { ids });
+};
+
 // 导出链接为CSV
 export const exportLinks = async (): Promise<Blob> => {
   // 直接使用 axios 而不是 apiClient，避免响应拦截器影响 blob 数据

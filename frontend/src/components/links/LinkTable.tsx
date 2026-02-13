@@ -15,6 +15,8 @@ interface LinkTableProps {
   onDelete: (id: number) => void;
   expiryShortCodes: Set<string>;
   loading?: boolean;
+  selectedRowKeys: React.Key[];
+  onSelectionChange: (keys: React.Key[]) => void;
 }
 
 export default function LinkTable({
@@ -23,7 +25,9 @@ export default function LinkTable({
   onPageChange,
   onDelete,
   expiryShortCodes,
-  loading = false
+  loading = false,
+  selectedRowKeys,
+  onSelectionChange
 }: LinkTableProps) {
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
@@ -379,6 +383,11 @@ export default function LinkTable({
         columns={columns}
         dataSource={links}
         rowKey="id"
+        rowSelection={{
+          selectedRowKeys,
+          onChange: onSelectionChange,
+          preserveSelectedRowKeys: false,
+        }}
         loading={{
           spinning: loading,
           tip: '加载中...',
