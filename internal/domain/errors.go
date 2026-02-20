@@ -22,6 +22,10 @@ var (
 	ErrSessionNotFound = errors.New("session not found")
 	ErrSessionExpired  = errors.New("session expired")
 
+	// API Key errors
+	ErrInvalidApiKey = errors.New("invalid api key")
+	ErrApiKeyExpired = errors.New("api key has been revoked")
+
 	// General errors
 	ErrInternalServer = errors.New("internal server error")
 	ErrUnauthorized   = errors.New("unauthorized")

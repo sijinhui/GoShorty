@@ -313,33 +313,6 @@ func (h *APIHandler) buildAnalyticsResponse(c *gin.Context, link *domain.Link, p
 	return response
 }
 
-// CreatePublicLink 公开创建短链接（不需要认证）
-func (h *APIHandler) CreatePublicLink(c *gin.Context) {
-	var req struct {
-		OriginalURL string `json:"original_url" binding:"required"`
-		ShortCode   string `json:"short_code"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		RespondBadRequest(c, "请填写原始链接")
-		return
-	}
-
-	link, err := h.linkService.CreateLink(c.Request.Context(), &service.CreateLinkRequest{
-		URL:        req.OriginalURL,
-		CustomCode: req.ShortCode,
-		UserID:     1,
-		CreatedIP:  getClientIP(c),
-	})
-	if err != nil {
-		h.logger.Error("Failed to create public link", zap.Error(err))
-		RespondError(c, err)
-		return
-	}
-
-	RespondSuccess(c, linkResponse(c, link), "短链接创建成功")
-}
-
 // ExportLinks 导出所有链接为CSV
 func (h *APIHandler) ExportLinks(c *gin.Context) {
 	links, err := h.linkService.ListLinks(c.Request.Context(), 0, 0)

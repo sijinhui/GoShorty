@@ -3,7 +3,7 @@ import type { APIResponse } from '../types/api';
 
 // 创建公开API客户端（不需要认证）
 const publicClient = axios.create({
-  baseURL: '/api',
+  baseURL: '/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,12 +14,14 @@ export const createPublicLink = async (data: {
   original_url: string;
   short_code?: string;
 }): Promise<APIResponse<{
-  id: number;
   short_code: string;
   original_url: string;
   short_url: string;
   created_at: string;
 }>> => {
-  const response = await publicClient.post('/links', data);
+  const response = await publicClient.post('/shorten', {
+    url: data.original_url,
+    custom_code: data.short_code,
+  });
   return response.data;
 };

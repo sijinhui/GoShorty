@@ -55,6 +55,8 @@ var errorCodeMap = map[error]string{
 	domain.ErrSessionExpired:     "SESSION_EXPIRED",
 	domain.ErrUnauthorized:       "UNAUTHORIZED",
 	domain.ErrForbidden:          "FORBIDDEN",
+	domain.ErrInvalidApiKey:      "INVALID_API_KEY",
+	domain.ErrApiKeyExpired:      "API_KEY_REVOKED",
 	domain.ErrInternalServer:     "INTERNAL_ERROR",
 }
 
@@ -74,6 +76,8 @@ var errorStatusMap = map[error]int{
 	domain.ErrSessionExpired:     http.StatusUnauthorized,
 	domain.ErrUnauthorized:       http.StatusUnauthorized,
 	domain.ErrForbidden:          http.StatusForbidden,
+	domain.ErrInvalidApiKey:      http.StatusUnauthorized,
+	domain.ErrApiKeyExpired:      http.StatusForbidden,
 	domain.ErrInternalServer:     http.StatusInternalServerError,
 }
 

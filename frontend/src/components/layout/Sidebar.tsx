@@ -28,6 +28,7 @@ export default function Sidebar({ onLogout, isMobile, isTablet, drawerOpen, onDr
     { path: '/admin/dashboard', label: '📊 仪表盘' },
     { path: '/admin/links', label: '🔗 链接管理' },
     { path: '/admin/link-expiry', label: '⏰ 过期管理' },
+    { path: '/admin/api-keys', label: '🔑 API 密钥' },
     { path: '/admin/settings', label: '⚙️ 系统设置' },
   ];
 

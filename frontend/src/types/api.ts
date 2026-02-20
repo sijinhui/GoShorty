@@ -118,3 +118,24 @@ export interface UpdateSettingsRequest {
   short_code_length: number;
   rate_limit?: RateLimitConfig;
 }
+
+// API密钥类型
+export interface ApiKey {
+  id: number;
+  key_prefix: string;
+  name: string;
+  user_id: number;
+  is_active: boolean;
+  last_used_at?: string;
+  created_at: string;
+}
+
+// 生成API密钥响应类型
+export interface GenerateApiKeyResponse {
+  key: string;
+  id: number;
+  name: string;
+  key_prefix: string;
+  created_at: string;
+  message: string;
+}

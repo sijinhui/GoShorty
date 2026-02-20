@@ -8,6 +8,7 @@ import Links from './pages/Links';
 import LinkStats from './pages/LinkStats';
 import Settings from './pages/Settings';
 import LinkExpiry from './pages/LinkExpiry';
+import ApiKeys from './pages/ApiKeys';
 import AdminLayout from './components/layout/AdminLayout';
 import { useAuthStore } from './store/authStore';
 import AntdStaticMethods from './components/AntdStaticMethods';
@@ -194,6 +195,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <LinkExpiry />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/api-keys"
+            element={
+              <ProtectedRoute>
+                <ApiKeys />
               </ProtectedRoute>
             }
           />

@@ -122,6 +122,10 @@ func main() {
 	analyticsService := service.NewAnalyticsService(analyticsRepo, geoResolver, logger)
 	rateLimitService := service.NewRateLimitService(rateLimitRepo, settingsService, logger)
 
+	// 初始化API密钥
+	apiKeyRepo := repository.NewPostgresApiKeyRepository(db.Pool)
+	apiKeyService := service.NewApiKeyService(apiKeyRepo, logger)
+
 	// 初始化Handler层
 	redirectHandler := handler.NewRedirectHandler(linkService, analyticsService, logger)
 	authMiddleware := handler.NewAuthMiddleware(authService, logger)
@@ -131,6 +135,7 @@ func main() {
 	settingsHandler := handler.NewSettingsHandler(settingsService, logger)
 	pluginHandler := handler.NewPluginHandler(pluginManager, settingsService, logger)
 	linkExpiryHandler := handler.NewLinkExpiryHandler(linkExpiryService, logger)
+	externalAPIHandler := handler.NewExternalAPIHandler(linkService, apiKeyService, logger)
 
 	// 初始化Gin
 	if cfg.Log.Level == "production" {
@@ -181,6 +186,11 @@ func main() {
 			api.DELETE("/link-expiry/batch/all", linkExpiryHandler.HandleDeleteAllExpired)
 			api.POST("/link-expiry/batch-delete", linkExpiryHandler.HandleBatchDeleteExpired)
 			api.POST("/link-expiry/:shortCode/cancel", linkExpiryHandler.HandleCancelExpiry)
+			// API密钥管理
+			api.POST("/api-keys", externalAPIHandler.GenerateApiKey)
+			api.GET("/api-keys", externalAPIHandler.ListApiKeys)
+			api.PUT("/api-keys/:id/revoke", externalAPIHandler.RevokeApiKey)
+			api.DELETE("/api-keys/:id", externalAPIHandler.DeleteApiKey)
 		}
 	}
 
@@ -193,10 +203,11 @@ func main() {
 		c.JSON(200, gin.H{"status": "healthy"})
 	})
 
-	// 公开API端点（不需要认证，但有速率限制）
-	publicAPI := router.Group("/api")
+	// 外部API v1（支持访客模式和管理员模式）
+	v1 := router.Group("/api/v1")
 	{
-		publicAPI.POST("/links", rateLimitMiddleware.RateLimit("/api/links"), apiHandler.CreatePublicLink)
+		// 创建短链接：无Key=访客模式，有Key=管理员模式
+		v1.POST("/shorten", rateLimitMiddleware.RateLimit("/api/v1/shorten"), externalAPIHandler.Shorten)
 	}
 
 	// 配置前端静态文件服务
@@ -205,7 +216,7 @@ func main() {
 		router.Static("/assets", filepath.Join(cfg.Frontend.StaticPath, "assets"))
 
 		// 管理后台前端路由（返回index.html，让React处理路由）
-		adminPages := []string{"/admin", "/admin/login", "/admin/dashboard", "/admin/links", "/admin/analytics", "/admin/settings", "/admin/link-expiry"}
+		adminPages := []string{"/admin", "/admin/login", "/admin/dashboard", "/admin/links", "/admin/analytics", "/admin/settings", "/admin/link-expiry", "/admin/api-keys"}
 		for _, path := range adminPages {
 			router.GET(path, func(c *gin.Context) {
 				c.File(filepath.Join(cfg.Frontend.StaticPath, "index.html"))
