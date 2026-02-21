@@ -38,9 +38,11 @@ export default function Home() {
         setCustomCode('');
 
         // 显示过期提示
+        const days = data.data.expiry_days;
+        const expiryText = days ? `该链接将在 ${days} 天后过期` : '该链接将在一段时间后过期';
         notification.info({
           title: '链接创建成功',
-          description: '该链接将在七天后过期',
+          description: expiryText,
           placement: 'topRight',
           duration: 4.5,
           showProgress: true,

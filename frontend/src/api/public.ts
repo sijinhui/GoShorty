@@ -18,6 +18,8 @@ export const createPublicLink = async (data: {
   original_url: string;
   short_url: string;
   created_at: string;
+  expires_at?: string;
+  expiry_days?: number;
 }>> => {
   const response = await publicClient.post('/shorten', {
     url: data.original_url,
