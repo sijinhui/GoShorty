@@ -58,11 +58,12 @@ type UpdateLinkRequest struct {
 
 // linkService 链接服务实现
 type linkService struct {
-	linkRepo       repository.LinkRepository
-	linkExpiryRepo repository.LinkExpiryRepository
-	codeGenerator  ShortCodeGenerator
-	hooks          *plugin.Hooks
-	logger         *zap.Logger
+	linkRepo        repository.LinkRepository
+	linkExpiryRepo  repository.LinkExpiryRepository
+	codeGenerator   ShortCodeGenerator
+	settingsService SettingsService
+	hooks           *plugin.Hooks
+	logger          *zap.Logger
 }
 
 // NewLinkService 创建一个新的链接服务
@@ -70,15 +71,17 @@ func NewLinkService(
 	linkRepo repository.LinkRepository,
 	linkExpiryRepo repository.LinkExpiryRepository,
 	codeGenerator ShortCodeGenerator,
+	settingsService SettingsService,
 	hooks *plugin.Hooks,
 	logger *zap.Logger,
 ) LinkService {
 	return &linkService{
-		linkRepo:       linkRepo,
-		linkExpiryRepo: linkExpiryRepo,
-		codeGenerator:  codeGenerator,
-		hooks:          hooks,
-		logger:         logger,
+		linkRepo:        linkRepo,
+		linkExpiryRepo:  linkExpiryRepo,
+		codeGenerator:   codeGenerator,
+		settingsService: settingsService,
+		hooks:           hooks,
+		logger:          logger,
 	}
 }
 
@@ -155,23 +158,55 @@ func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*
 		shortCode = req.CustomCode
 		isCustom = true
 	} else {
-		// 自动生成短码
+		// 自动生成短码（带自动扩展长度机制）
 		var err error
-		for i := 0; i < 5; i++ { // 最多尝试5次
+		generated := false
+		for i := 0; i < 5; i++ {
 			shortCode, err = s.codeGenerator.Generate()
 			if err != nil {
 				s.logger.Error("failed to generate short code", zap.Error(err))
 				return nil, err
 			}
 
-			// 检查是否已存在
 			exists, err := s.linkRepo.ExistsShortCode(ctx, shortCode)
 			if err != nil {
 				s.logger.Error("failed to check short code existence", zap.Error(err))
 				return nil, err
 			}
 			if !exists {
+				generated = true
 				break
+			}
+		}
+
+		// 5次全部冲突，自动扩展长度并重试
+		if !generated {
+			oldLen := s.codeGenerator.Length()
+			newLen := oldLen + 1
+			if newLen > maxShortCodeLength {
+				s.logger.Error("short code length reached maximum, cannot auto-expand",
+					zap.Int("current_length", oldLen))
+				return nil, errors.New("短码空间已耗尽，无法继续生成")
+			}
+
+			s.logger.Warn("short code collision threshold reached, auto-expanding length",
+				zap.Int("old_length", oldLen),
+				zap.Int("new_length", newLen))
+
+			// 更新生成器长度
+			s.codeGenerator.SetLength(newLen)
+
+			// 同步持久化到数据库设置
+			if err := s.settingsService.UpdateShortCodeLength(ctx, newLen); err != nil {
+				s.logger.Error("failed to persist new short code length", zap.Error(err))
+				// 持久化失败不阻塞本次生成，但下次重启会回退
+			}
+
+			// 用新长度再生成一次
+			shortCode, err = s.codeGenerator.Generate()
+			if err != nil {
+				s.logger.Error("failed to generate short code after expansion", zap.Error(err))
+				return nil, err
 			}
 		}
 	}

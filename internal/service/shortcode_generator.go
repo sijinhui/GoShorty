@@ -59,6 +59,8 @@ func isBlacklisted(code string) bool {
 type ShortCodeGenerator interface {
 	Generate() (string, error)
 	Validate(code string) error
+	Length() int
+	SetLength(length int)
 }
 
 // Base62Generator 基于Base62的短码生成器
@@ -72,6 +74,18 @@ func NewBase62Generator(length int) *Base62Generator {
 		length = defaultShortCodeLength
 	}
 	return &Base62Generator{length: length}
+}
+
+// Length 返回当前短码长度
+func (g *Base62Generator) Length() int {
+	return g.length
+}
+
+// SetLength 设置短码长度
+func (g *Base62Generator) SetLength(length int) {
+	if length >= minShortCodeLength && length <= maxShortCodeLength {
+		g.length = length
+	}
 }
 
 // Generate 生成一个随机的短码（使用安全字符集）

@@ -115,7 +115,7 @@ func main() {
 	logger.Info("Short code length configured", zap.Int("length", shortCodeLength))
 
 	codeGenerator := service.NewBase62Generator(shortCodeLength)
-	linkService := service.NewLinkService(linkRepo, linkExpiryRepo, codeGenerator, hooks, logger)
+	linkService := service.NewLinkService(linkRepo, linkExpiryRepo, codeGenerator, settingsService, hooks, logger)
 	linkExpiryService := service.NewLinkExpiryService(linkExpiryRepo, linkRepo, logger)
 	authService := service.NewAuthService(userRepo, sessionRepo, cfg.Session.MaxAge, logger)
 	geoResolver := geolocation.NewSimpleGeoIPResolver()
