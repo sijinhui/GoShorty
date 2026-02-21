@@ -28,6 +28,7 @@ type LinkRepository interface {
 	IncrementClickCount(ctx context.Context, id int64) error
 	DeleteExpired(ctx context.Context, before time.Time) error
 	ExistsShortCode(ctx context.Context, shortCode string) (bool, error)
+	GetActiveByOriginalURL(ctx context.Context, userID int, originalURL string) (*domain.Link, error)
 }
 
 // PostgresLinkRepository 是LinkRepository的PostgreSQL实现
@@ -320,6 +321,24 @@ func (r *PostgresLinkRepository) Search(ctx context.Context, keyword string, lim
 	}
 
 	return links, rows.Err()
+}
+
+// GetActiveByOriginalURL 根据用户ID和原始URL查找已存在的活跃链接
+func (r *PostgresLinkRepository) GetActiveByOriginalURL(ctx context.Context, userID int, originalURL string) (*domain.Link, error) {
+	query := `SELECT ` + linkColumns + ` FROM links
+		WHERE user_id = $1 AND original_url = $2 AND is_active = true
+		ORDER BY created_at DESC
+		LIMIT 1`
+
+	row := r.pool.QueryRow(ctx, query, userID, originalURL)
+	link, err := scanLink(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return link, nil
 }
 
 // CountSearch 获取搜索结果总数

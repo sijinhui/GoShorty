@@ -75,14 +75,18 @@ func (h *ExternalAPIHandler) Shorten(c *gin.Context) {
 	}
 
 	data := gin.H{
-		"short_code":   link.ShortCode,
-		"short_url":    buildShortURL(c, link.ShortCode),
-		"original_url": link.OriginalURL,
-		"created_at":   link.CreatedAt,
+		"short_code":   link.Link.ShortCode,
+		"short_url":    buildShortURL(c, link.Link.ShortCode),
+		"original_url": link.Link.OriginalURL,
+		"created_at":   link.Link.CreatedAt,
+	}
+	if link.ExpiresAt != nil {
+		data["expires_at"] = link.ExpiresAt
+		data["expiry_days"] = link.ExpiryDays
 	}
 	if isAdmin {
-		data["title"] = link.Title
-		data["id"] = link.ID
+		data["title"] = link.Link.Title
+		data["id"] = link.Link.ID
 		data["mode"] = "admin"
 	} else {
 		data["mode"] = "guest"

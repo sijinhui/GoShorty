@@ -120,7 +120,7 @@ func (h *APIHandler) CreateLink(c *gin.Context) {
 		return
 	}
 
-	RespondSuccess(c, linkResponse(c, link), "短链接创建成功")
+	RespondSuccess(c, linkResponse(c, link.Link), "短链接创建成功")
 }
 
 // GetLinks 获取链接列表

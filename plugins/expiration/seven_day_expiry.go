@@ -56,6 +56,6 @@ func (p *SevenDayExpiryPlugin) SetDays(days int) {
 // CalculateExpiry 计算过期时间
 func (p *SevenDayExpiryPlugin) CalculateExpiry(ctx context.Context, link *domain.Link) (*time.Time, error) {
 	// 计算默认过期时间（当前时间 + 配置的天数）
-	expiry := time.Now().AddDate(0, 0, p.days)
+	expiry := time.Now().UTC().AddDate(0, 0, p.days)
 	return &expiry, nil
 }

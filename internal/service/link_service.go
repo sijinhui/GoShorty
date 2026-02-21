@@ -13,9 +13,16 @@ import (
 	"go.uber.org/zap"
 )
 
+// CreateLinkResult 创建链接结果
+type CreateLinkResult struct {
+	Link       *domain.Link
+	ExpiryDays int
+	ExpiresAt  *time.Time
+}
+
 // LinkService 链接服务接口
 type LinkService interface {
-	CreateLink(ctx context.Context, req *CreateLinkRequest) (*domain.Link, error)
+	CreateLink(ctx context.Context, req *CreateLinkRequest) (*CreateLinkResult, error)
 	GetByShortCode(ctx context.Context, shortCode string) (*domain.Link, error)
 	GetByID(ctx context.Context, id int64) (*domain.Link, error)
 	UpdateLink(ctx context.Context, req *UpdateLinkRequest) error
@@ -76,12 +83,34 @@ func NewLinkService(
 }
 
 // CreateLink 创建一个新的短链接
-func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*domain.Link, error) {
+func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*CreateLinkResult, error) {
 	// 验证URL
 	normalizedURL := validator.NormalizeURL(req.URL)
 	if err := validator.ValidateURL(normalizedURL); err != nil {
 		s.logger.Error("invalid URL", zap.String("url", req.URL), zap.Error(err))
 		return nil, domain.ErrInvalidURL
+	}
+
+	// 检查该用户是否已有相同URL的活跃链接，有则直接返回
+	if req.CustomCode == "" {
+		existing, err := s.linkRepo.GetActiveByOriginalURL(ctx, req.UserID, normalizedURL)
+		if err != nil {
+			s.logger.Error("failed to check existing link", zap.Error(err))
+			return nil, err
+		}
+		if existing != nil {
+			s.logger.Info("returning existing link for duplicate URL",
+				zap.String("url", normalizedURL),
+				zap.String("short_code", existing.ShortCode),
+			)
+			result := &CreateLinkResult{Link: existing}
+			// 查询过期信息
+			if expiry, err := s.linkExpiryRepo.GetByShortCode(ctx, existing.ShortCode); err == nil && expiry != nil {
+				result.ExpiryDays = expiry.LifecycleDays
+				result.ExpiresAt = &expiry.ExpiresAt
+			}
+			return result, nil
+		}
 	}
 
 	// 生成或验证短码
@@ -166,7 +195,7 @@ func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*
 	if req.ExpiryDays > 0 {
 		// 用户指定了过期天数
 		expiryDays = req.ExpiryDays
-		expiry := time.Now().AddDate(0, 0, expiryDays)
+		expiry := time.Now().UTC().AddDate(0, 0, expiryDays)
 		expiresAt = &expiry
 		s.logger.Debug("using user-specified expiry",
 			zap.Int("days", expiryDays),
@@ -260,7 +289,11 @@ func (s *linkService) CreateLink(ctx context.Context, req *CreateLinkRequest) (*
 		zap.String("url", link.OriginalURL),
 	)
 
-	return link, nil
+	return &CreateLinkResult{
+		Link:       link,
+		ExpiryDays: expiryDays,
+		ExpiresAt:  expiresAt,
+	}, nil
 }
 
 // GetByShortCode 根据短码获取链接
