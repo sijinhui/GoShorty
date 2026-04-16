@@ -126,6 +126,10 @@ func main() {
 	apiKeyRepo := repository.NewPostgresApiKeyRepository(db.Pool)
 	apiKeyService := service.NewApiKeyService(apiKeyRepo, logger)
 
+	// 初始化过期链接清理服务（过期30天后自动清理，每24小时执行一次）
+	cleanupService := service.NewCleanupService(linkExpiryRepo, logger, 30, 24)
+	cleanupService.Start()
+
 	// 初始化Handler层
 	redirectHandler := handler.NewRedirectHandler(linkService, analyticsService, logger)
 	authMiddleware := handler.NewAuthMiddleware(authService, logger)
@@ -284,6 +288,7 @@ func main() {
 	<-quit
 
 	logger.Info("Shutting down server...")
+	cleanupService.Stop()
 	logger.Info("Server stopped")
 }
 

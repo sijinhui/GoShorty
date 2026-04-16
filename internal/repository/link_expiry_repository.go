@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"time"
 
 	"GoShorty/internal/domain"
 
@@ -16,6 +17,7 @@ type LinkExpiryRepository interface {
 	Update(ctx context.Context, expiry *domain.LinkExpiry) error
 	Delete(ctx context.Context, shortCode string) error
 	DeleteExpired(ctx context.Context) (int64, error)
+	DeleteExpiredBefore(ctx context.Context, before time.Time) (int64, error)
 	ListExpiring(ctx context.Context, limit int) ([]*domain.LinkExpiry, error)
 	ListExpired(ctx context.Context, limit, offset int) ([]*domain.LinkExpiry, error)
 }
@@ -112,6 +114,29 @@ func (r *PostgresLinkExpiryRepository) Delete(ctx context.Context, shortCode str
 func (r *PostgresLinkExpiryRepository) DeleteExpired(ctx context.Context) (int64, error) {
 	query := `DELETE FROM link_expiry WHERE expires_at < NOW()`
 	result, err := r.pool.Exec(ctx, query)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+// DeleteExpiredBefore 删除在指定时间之前已过期的记录（含关联的 links）
+func (r *PostgresLinkExpiryRepository) DeleteExpiredBefore(ctx context.Context, before time.Time) (int64, error) {
+	// 利用 ON DELETE CASCADE，先获取即将删除的短码列表
+	query := `
+		WITH expired AS (
+			SELECT short_code FROM link_expiry WHERE expires_at < $1
+		)
+		DELETE FROM links WHERE short_code IN (SELECT short_code FROM expired)
+	`
+	_, err := r.pool.Exec(ctx, query, before)
+	if err != nil {
+		return 0, err
+	}
+
+	// 删除对应的 link_expiry 记录（CASCADE 可能已经处理了，但保险起见）
+	expiryQuery := `DELETE FROM link_expiry WHERE expires_at < $1`
+	result, err := r.pool.Exec(ctx, expiryQuery, before)
 	if err != nil {
 		return 0, err
 	}
